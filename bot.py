@@ -20,22 +20,30 @@ from io import BytesIO
 from tinydb import TinyDB, Query
 from PyDictionary import PyDictionary
 from modules import encrypt as enc, decrypt as dec, languages
+from keep_alive import keep_alive
 from discord.ext.commands import MissingPermissions
 from googletrans import Translator, constants
 from pprint import pprint
+import typing
+from discord.ext.commands import cooldown, BucketType
 intents = discord.Intents().all()
 from discord_components import *
-from discord_components import DiscordComponents, Button, Select, SelectOption
+from discord_components import DiscordComponents, Button, ButtonStyle, Select, SelectOption
 
 
 async def determine_prefix(bot, message):
-    db = TinyDB('databases/prefix.json')
-    guild_id = message.guild.id
-    query = Query()
-    if db.search(query['guild_id'] == str(guild_id)):
-        values = list(map(lambda entry: entry["prefix"], db.search(query.guild_id == str(guild_id))))
-        return values
-    return '!'
+    if message.guild:
+        db = TinyDB('databases/prefix.json')
+        if message is not None:
+            guild_id = message.guild.id
+        query = Query()
+        if db.search(query['guild_id'] == str(guild_id)):
+            values = list(map(lambda entry: entry["prefix"], db.search(query.guild_id == str(guild_id))))
+            return values
+        return '!'
+
+    else:
+        return '!'
 
 
 bot = commands.Bot(command_prefix=determine_prefix, intents=intents)
@@ -71,9 +79,8 @@ emojiLetters = [
 
 @bot.event
 async def on_ready():
-    await bot.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.watching,
-                                                                                    name="Cheese Cool"))
-    db = TinyDB('databases/warnings.json')
+    await bot.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.listening,
+                                                                                    name="!help"))
     print('Logged in as')
     print(bot.user.name)
     print(bot.user.id)
@@ -96,12 +103,9 @@ async def on_message(message):
         if blacklisted_peeps is not None:
             return
     except:
-        print("Sorry could not get guild")
+        print("It's a DM")
 
     await bot.process_commands(message=message)
-
-
-
 
 
 @bot.event
@@ -125,7 +129,7 @@ async def on_member_join(member):
 
 @bot.event
 async def on_guild_channel_create(channel):
-    guild = bot.guild
+    guild = channel.guild
     mutedRole = discord.utils.get(guild.roles, name="Is Muted")
     if mutedRole is None:
         perms = discord.Permissions(speak=False, send_messages=False, read_message_history=True, read_messages=True)
@@ -158,22 +162,14 @@ async def myLoop():
 
 @bot.event
 async def on_guild_join(guild):
-    embed = discord.Embed(title="Guild join", description=guild.name, color=0x00FF00)
     db = TinyDB('databases/people_who_know.json')
-    count = 0
-    actual_count = 0
+    db1 = TinyDB('databases/lockdown.json')
+    db1.insert({'guild': guild.id, 'unaffected_channels': [], 'state': False})
+    print(str(db.all()))
     for x in guild.members:
-        if not x.bot and str(x.id) not in str(db):
-            db.insert({'name': x.id})
-        count += 1
-    placehold = 'We do be popular boi'
-    embed.add_field(name=f"Members", value=count)
-    embed.add_field(name=f"Owner", value=guild.owner)
-    a = bot.get_guild(869173101131337748)
-    channel = a.get_channel(869447409237897256)
-    embed.set_footer(text=f"Chad is currently in {len(bot.guilds)} servers")
-    await channel.send(embed=embed)
-
+        if not x.bot and str(x.name) not in str(db.all()):
+            db.insert({'name': x.name})
+    
 
 @bot.event
 async def on_member_join(member):
@@ -196,15 +192,23 @@ async def on_member_join(member):
 
 @bot.event
 async def on_guild_remove(guild):
+    db1 = TinyDB('databases/lockdown.json')
+    db1q = Query()
+    db1.remove(db1q.guild == guild.id)
+    db2 = TinyDB('databases/blacklist.json')
+    db2q = Query()
+    db2.remove(db2q.guild_id == guild.id)
+    db3 = TinyDB('databases/warnings.json')
+    db3q = Query()
+    db3.remove(db3q.guild_id == guild.id)
+    db4 = TinyDB('databases/prefix.json')
+    db4q = Query()
+    db4.remove(db4q.guild_id == guild.id)
+
     embed = discord.Embed(title="Guild leave", description=guild.name, color=0xFF0000)
     count = 0
     for x in guild.members:
         count += 1
-    embed.add_field(name=f"Members", value=count)
-    embed.add_field(name=f"Owner", value=guild.owner)
-    a = bot.get_guild(869173101131337748)
-    channel = a.get_channel(869447409237897256)
-    await channel.send(embed=embed)
 
 
 @bot.event
@@ -240,20 +244,25 @@ class TimeConverter(commands.Converter):
 
 @bot.command()
 async def prefix(ctx, *, prefix=None):
-    db = TinyDB('databases/prefix.json')
-    query = Query()
-    guild_id_var = ctx.guild.id
-    if prefix is None:
-        await ctx.send(embed=discord.Embed(title=f"My prefix is `{ctx.prefix}`"))
+    if ctx.author.guild_permissions.administrator:
+        db = TinyDB('databases/prefix.json')
+        query = Query()
+        guild_id_var = ctx.guild.id
+        if prefix is None:
+            await ctx.send(embed=discord.Embed(title=f"My prefix is `{ctx.prefix}`"))
+
+        else:
+            if db.search(query.guild_id == str(guild_id_var)):
+                db.update({'prefix': prefix}, query.guild_id == str(guild_id_var))
+                await ctx.send(embed=discord.Embed(title=f"Updated prefix of \"{ctx.guild.name}\" to {prefix}"))
+            else:
+                db.insert({'guild_id': str(guild_id_var), 'prefix': str(prefix)})
+                await ctx.send(embed=discord.Embed(title=f"Changed prefix of \"{ctx.guild.name}\" to {prefix}"))
 
     else:
-        if db.search(query.guild_id == str(guild_id_var)):
-            db.update({'prefix': prefix}, query.guild_id == str(guild_id_var))
-            await ctx.send(embed=discord.Embed(title=f"Updated prefix of \"{ctx.guild.name}\" to {prefix}"))
-        else:
-            db.insert({'guild_id': str(guild_id_var), 'prefix': str(prefix)})
-            await ctx.send(embed=discord.Embed(title=f"Changed prefix of \"{ctx.guild.name}\" to {prefix}"))
-
+        embed = discord.Embed(title="Hold up",
+                              description="You can't do that, your not an admin!",
+                              color=discord.Color.red())
 
 
 @bot.command()
@@ -270,6 +279,7 @@ async def invite(ctx):
         title="Invite",
         description=f"To invite me to your own server [click here](https://discord.com/api/oauth2/authorize?client_id=864010316424806451&permissions=3694651478&scope=applications.commands%20bot).")
     embed.set_footer(text="Information requested by: {}".format(ctx.author.display_name))
+    embed.set_thumbnail(url=ctx.author.avatar_url)
     embed.color = discord.Colour.green()
     await ctx.send(embed=embed)
 
@@ -280,6 +290,8 @@ async def userinfo(ctx, target: discord.Member):
         x = ctx.guild.members
         if target in x:
             roles = [role for role in target.roles if role != ctx.guild.default_role]
+            if roles == []:
+                roles = None
             embed = discord.Embed(title="User information", colour=discord.Color.gold(),
                                   timestamp=datetime.datetime.utcnow())
 
@@ -290,12 +302,21 @@ async def userinfo(ctx, target: discord.Member):
             embed.set_footer(text=f"Requested by {ctx.author.display_name}",
                              icon_url=ctx.author.avatar_url)
 
-            fields = [("Name", str(target), False),
-                      ("ID", target.id, False),
-                      ("Status", str(target.status).title(), False),
-                      (f"Roles ({len(roles)})", " ".join([role.mention for role in roles]), False),
-                      ("Created at", target.created_at.strftime("%d/%m/%Y %H:%M:%S"), False),
-                      ("Joined at", target.joined_at.strftime("%d/%m/%Y %H:%M:%S"), False)]
+            if roles is None:
+                fields = [("Name", str(target), False),
+                          ("ID", target.id, False),
+                          ("Status", str(target.status).title(), False),
+                          (f"Roles", "No roles", False),
+                          ("Created at", target.created_at.strftime("%d/%m/%Y %H:%M:%S"), False),
+                          ("Joined at", target.joined_at.strftime("%d/%m/%Y %H:%M:%S"), False)]
+
+            else:
+                fields = [("Name", str(target), False),
+                          ("ID", target.id, False),
+                          ("Status", str(target.status).title(), False),
+                          (f"Roles ({len(roles)})", " ".join([role.mention for role in roles]), False),
+                          ("Created at", target.created_at.strftime("%d/%m/%Y %H:%M:%S"), False),
+                          ("Joined at", target.joined_at.strftime("%d/%m/%Y %H:%M:%S"), False)]
 
             for name, value, inline in fields:
                 embed.add_field(name=name, value=value, inline=inline)
@@ -303,7 +324,9 @@ async def userinfo(ctx, target: discord.Member):
         else:
             await ctx.send(f'You have to ping someone from this server')
     else:
-        await ctx.send(f'Not enough permissions')
+        await ctx.send(
+            embed=discord.Embed(title="Stop right there!", description="You require to be an admin!",
+                                color=discord.Color.red()))
 
 
 format = "%a, %d %b %Y | %H:%M:%S %ZGMT"
@@ -318,7 +341,7 @@ async def about(ctx):
     about_embed.add_field(name="Give me feedback and complains here. Help me improve myself!",
                           value="[Support Server](https://discord.gg/9emrvg3s3Y)", inline=True)
     user = bot.get_user(864010316424806451)
-    about_embed.set_thumbnail(url=user.avatar_url)
+    about_embed.set_thumbnail(url=ctx.author.avatar_url)
     await ctx.send(embed=about_embed)
 
 
@@ -328,6 +351,7 @@ async def website(ctx):
                           color=discord.Color.dark_magenta(),
                           description="This is our main [website](https://zeroandone.ml)\nClick [here](https://www.youtube.com/channel/UCF0DZYNiHcIGZKBoPWfc0lg) to see our YouTube Channel.")
     embed.set_footer(text=f"Website requested by {ctx.author.name}")
+    embed.set_thumbnail(url=ctx.author.avatar_url)
     await ctx.send(embed=embed)
 
 
@@ -336,6 +360,7 @@ async def support(ctx):
     embed = discord.Embed(title="Support Server",
                           description="To visit our support server, click [here](https://discord.gg/EmvXgYyV).\nNow you can complain all you want!!",
                           color=discord.Color.random())
+    embed.set_thumbnail(url=ctx.author.avatar_url)
     await ctx.send(embed=embed)
 
 
@@ -352,7 +377,7 @@ async def serverinfo(ctx):
     channels = text_channels + voice_channels
     embed.set_thumbnail(url=str(ctx.guild.icon_url))
     embed.add_field(name=f"Information About **{ctx.guild.name}**: ",
-                    value=f":white_small_square: ID: **{ctx.guild.id}** \n:white_small_square: Owner: **{ctx.guild.owner}** \n:white_small_square: Location: **{ctx.guild.region}** \n:white_small_square: Creation: **{ctx.guild.created_at.strftime(format)}** \n:white_small_square: Members: **{ctx.guild.member_count}** \n:white_small_square: Channels: **{channels}** Channels; **{text_channels}** Text, **{voice_channels}** Voice, **{categories}** Categories \n:white_small_square: Verification: **{str(ctx.guild.verification_level).upper()}** \n:white_small_square: Features: {', '.join(f'**{x}**' for x in ctx.guild.features)} \n:white_small_square: Splash: {ctx.guild.splash}")
+                    value=f":white_small_square: ID: **{ctx.guild.id}** \n:white_small_square: Owner: **{ctx.guild.owner}** \n:white_small_square: Location: **{str(ctx.guild.region).capitalize()}** \n:white_small_square: Creation: **{ctx.guild.created_at.strftime(format)}** \n:white_small_square: Members: **{ctx.guild.member_count}** \n:white_small_square: Channels: **{channels}** Channels; **{text_channels}** Text, **{voice_channels}** Voice, **{categories}** Categories \n:white_small_square: Verification: **{str(ctx.guild.verification_level).upper()}** \n:white_small_square: Features: {', '.join(f'**{x}**' for x in ctx.guild.features)} \n:white_small_square: Splash: {ctx.guild.splash}")
     await ctx.send(embed=embed)
 
 
@@ -360,17 +385,18 @@ async def serverinfo(ctx):
 async def servers(ctx):
     if ctx.author.id == 815555652780294175 or ctx.author.id == 723032217504186389:
         active_servers = bot.guilds
-        i=0
+        i = 0
         embed = discord.Embed(title="Servers i am in......", color=discord.Color.random())
         for guild in active_servers:
-            i+=1
-            embed.add_field(name=f"{i}.",value=guild,inline=False)
+            i += 1
+            embed.add_field(name=f"{i}.", value=guild, inline=False)
 
         embed.set_footer(text="Someone be getting popular :)")
         await ctx.send(embed=embed)
 
     else:
-        await ctx.send(embed=discord.Embed(title="Imagine trying to see stats of someone else's bot",color=discord.Color.random()))
+        await ctx.send(embed=discord.Embed(title="Imagine trying to see stats of someone else's bot",
+                                           color=discord.Color.random()))
 
 
 @bot.command()
@@ -469,51 +495,67 @@ async def deleterole(ctx, rolename: discord.Role):
                                 description="You require the Manage Roles permission.",
                                 color=discord.Color.green()))
 
-@commands.has_permissions(manage_nicknames=True)
+
 @bot.command()
 async def nick(ctx, member: discord.Member, *, nick=None):
-    if nick is None:
-        await member.edit(nick=member.name)
-        embed = discord.Embed(title=f"Nickname removed from {member.name}",
-                              description=f"His name has been changed back to {member.name}",
-                              color=discord.Color.red())
-        await ctx.send(embed=embed)
+    if ctx.author.guild_permissions.manage_nicknames:
+        if nick is None:
+            await member.edit(nick=member.name)
+            embed = discord.Embed(title=f"Nickname removed from {member.name}",
+                                  description=f"His name has been changed back to {member.name}",
+                                  color=discord.Color.red())
+            await ctx.send(embed=embed)
+
+        elif len(nick) > 32:
+            embed = discord.Embed(title=f"That nickname is TOO LONG",
+                                  description=f" I'd probably get bored changing it\nTry a nickname that has less then 32 characters",
+                                  color=discord.Color.green())
+            await ctx.send(embed=embed)
+
+        else:
+            await member.edit(nick=nick)
+            embed = discord.Embed(title=f"Nickname changed for {member.name}",
+                                  description=f" His name is now {member.nick}",
+                                  color=discord.Color.green())
+            await ctx.send(embed=embed)
 
     else:
-
-        await member.edit(nick=nick)
-        embed = discord.Embed(title=f"Nickname changed for {member.name}",
-                              description=f" His name is now {member.nick}", color=discord.Color.green())
-        await ctx.send(embed=embed)
+        await ctx.send(
+            embed=discord.Embed(title="I refuse", description="You require the manage nicknames permission.",
+                                color=discord.Color.red()))
 
 
 @bot.command()
 async def snipe(ctx):
     channel = ctx.channel
-    try:  # This piece of code is run if the bot finds anything in the dictionary
-
+    try:
         em = discord.Embed(title=f"Last deleted message in #{channel.name}",
                            description=snipe_message_content[channel.id], color=discord.Color.red())
 
         em.set_footer(text=f"This message was sent by {snipe_message_author[channel.id]}")
         await ctx.send(embed=em)
-    except:  # This piece of code is run if the bot doesn't find anything in the dictionary
+
+    except:
         em = discord.Embed(description=f"There are no recently deleted messages in channel {channel.name}",
                            color=discord.Color.dark_gray())
         await ctx.send(embed=em)
 
 
 @bot.command()
-async def slowmode(ctx,
-                   seconds: int):  # i see u added it to add and remove role as well/ well done! ty bud now follow me
-    if ctx.author.guild_permissions.manage_roles:
-        await ctx.channel.edit(slowmode_delay=seconds)
-        embed = discord.Embed(
-            title="Slowmode Enabled!",
-            description=f"There is a {seconds} seconds slowmode on this channel now."
-        )
+async def slowmode(ctx, seconds: int):
+    if ctx.author.guild_permissions.administrator:
+        if seconds <= 21600:
+            await ctx.channel.edit(slowmode_delay=seconds)
+            embed = discord.Embed(
+                title="Slowmode Enabled!",
+                description=f"There is a {seconds} seconds slowmode on this channel now."
+            )
+        else:
+            embed = discord.Embed(title="Did you know?",
+                                  description=f"Discord allows slowmodes upto 21600 seconds on its channels, which is equal to 360m, which is 6h!",
+                                  color=discord.Color.random())
+            embed.set_footer(text="Point being, you can't set a slowmode above that")
         await ctx.send(embed=embed)
-
 
     else:
         await ctx.send(
@@ -522,27 +564,51 @@ async def slowmode(ctx,
 
 
 @bot.command()
-async def blacklist(ctx, member: discord.User):
+async def blacklist(ctx, member: discord.Member):
     db = TinyDB('databases/blacklist.json')
     guild_id_var = ctx.guild.id
-    if ctx.author.guild_permissions.administrator:
+    if ctx.author.id == 815555652780294175 or ctx.author.id == 723032217504186389:
+        db.insert({'guild_id': guild_id_var, 'blacklisted': str(member.id)})
+        await ctx.send(embed=discord.Embed(title=f"I'm Sorry, but my boss wants you blacklisted"))
+        return
+
+    elif ctx.author.guild_permissions.administrator:
         if not member:
-            await ctx.send("Please provide a member to blacklist")
+            await ctx.send(embed=discord.Embed(title="Please provide a member to blacklist smh"))
             return
 
-        if ctx.author.id == 723032217504186389 or ctx.author.id == 723032217504186389:
+        if member == ctx.author:
+            embed = discord.Embed(title="Bruh why are you trying to blacklist yourself.",
+                                  description="I refuse to let your stupidity get the better of you.",
+                                  color=discord.Color.random())
+            embed.set_footer(text="Users these days...")
+            await ctx.send(embed=embed)
+            return
+
+        elif member.id == 815555652780294175 or member.id == 723032217504186389:
             await ctx.send(
                 embed=discord.Embed(title="Buddy you can't blacklist the boss <a:ZO_BlobCool:866263738545078302>"))
+            return
+
+        elif member.guild_permissions.administrator:
+            await ctx.send(
+                embed=discord.Embed(title="Halt! (lmao)",
+                                    description="You cannot just go ahead and stop your fellow admins from using me!",
+                                    color=discord.Color.red()))
+            return
 
         elif {"guild_id": guild_id_var, "blacklisted": str(member.id)} in db.all():
             await ctx.send(embed=discord.Embed(title=f"{member.display_name} is already blacklisted...",
                                                description="Jeez why do you hate him so much",
                                                color=discord.Color.teal()))
+            return
+
         else:
             db.insert({'guild_id': guild_id_var, 'blacklisted': str(member.id)})
             await ctx.send(embed=discord.Embed(title=f"{member.display_name} is blacklisted",
                                                description="He can no longer use me :cry:",
                                                color=discord.Color.teal()))
+            return
 
     else:
         await ctx.send(
@@ -551,19 +617,26 @@ async def blacklist(ctx, member: discord.User):
 
 
 @bot.command()
-async def unblacklist(ctx, member: discord.User):
+async def unblacklist(ctx, member: discord.Member):
     db = TinyDB('databases/blacklist.json')
     guild_id_var = ctx.guild.id
-    if ctx.author.guild_permissions.administrator:
+    if ctx.author.guild_permissions.administrator or ctx.author.id == 815555652780294175 or \
+            ctx.author.id == 723032217504186389:
         if not member:
             await ctx.send("Please provide a member to unblacklist")
             return
         query = Query()
         try:
             db.remove(query.blacklisted == str(member.id))
-            await ctx.send(embed=discord.Embed(title=f"{member.display_name} is unblacklisted",
-                                               description="He can now use me! :joy:",
-                                               color=discord.Color.teal()))
+            if ctx.author.id == 815555652780294175 or ctx.author.id == 723032217504186389:
+                await ctx.send(embed=discord.Embed(title=f"{member.display_name} is unblacklisted",
+                                                   description="My boss asked me to do so... :joy:",
+                                                   color=discord.Color.random()))
+
+            else:
+                await ctx.send(embed=discord.Embed(title=f"{member.display_name} is unblacklisted",
+                                                   description="He can now use me! :joy:",
+                                                   color=discord.Color.random()))
         except:
             await ctx.send(embed=discord.Embed(title="Nope!",
                                                description=f"{member.display_name} is not blacklisted in this server."))
@@ -592,75 +665,134 @@ async def clear(ctx, times: int, hide=None):
 
 
 @bot.command()
-async def warn(ctx, user: discord.User, *, reason: str):
+async def warn(ctx, member: discord.Member, *, reason: str):
     db = TinyDB('databases/warnings.json')
     guild_id_var = ctx.guild.id
-    if ctx.author.guild_permissions.administrator:
-        if not reason:
-            await ctx.send("Please provide a reason")
-            return
-        await ctx.send(embed=discord.Embed(title=f"{user.display_name} has been warned", description=reason,
-                                           color=discord.Color.teal()))
-        db.insert({'guild_id': guild_id_var, 'user': str(user), 'reason': reason})
+    if ctx.author != member:
+        if ctx.author.guild_permissions.administrator:
+            if member.guild_permissions.administrator:
+                await ctx.send(embed=discord.Embed(title="ALERT! ALERT! :dizzy_face:",
+                                                   description="Warning fellow admins is a no-no, kids!",
+                                                   color=discord.Color.random()))
+            elif not reason:
+                await ctx.send(embed=dsicrod.Embed(title="Please provide a reason",
+                                                   color=discord.Color.random()))
+                return
+            elif len(reason) > 150:
+                await ctx.send(
+                    embed=discord.Embed(title=f"The reason for warning cannot be more then 150 characters long!",
+                                        description=f"You are {len(reason) - 150} characters over the limit!",
+                                        color=discord.Color.random()))
+            else:
+                await ctx.send(embed=discord.Embed(title=f"{member.display_name} has been warned", description=reason,
+                                                   color=discord.Color.random()))
+                db.insert({'guild_id': guild_id_var, 'member': str(member), 'reason': reason})
 
 
+        else:
+            await ctx.send(
+                embed=discord.Embed(title="Stop right there!", description="You require the administrator permission.",
+                                    color=discord.Color.red()))
     else:
-        await ctx.send(
-            embed=discord.Embed(title="Stop right there!", description="You require the administrator permission.",
-                                color=discord.Color.red()))
+        await ctx.send(embed=discord.Embed(title="Stop trying to warn yourself.",
+                                           description="IT. IS. A. BAD. THING.",
+                                           color=discord.Color.random()))
 
 
 @bot.command()
-async def userwarn(ctx, user: discord.User):
+async def userwarn(ctx, member: discord.Member):
     db = TinyDB('databases/warnings.json')
     guild_id_var = ctx.guild.id
-    member = Query()
-    tht_member_warnings = db.search(member['user'] == str(user))
-    a = db.search((member['guild_id'] == guild_id_var) & (member['user'] == str(user)))
-    embed = discord.Embed(title=f"Here are the warnings for {user.display_name}:", description="Warnings")
-    num_of_reasons = a.count
-    i = 0
-    for a in a:
-        i += 1
-        b = a.get('reason')
-        embed.add_field(name=f"{i}. ", value=b, inline=False)
-    embed.set_footer(text="Someone's been a naughty boi")
-    embed.color = 0xa6ff00
+    query = Query()
+    tht_member_warnings = db.search(query['member'] == str(member))
+    a = db.search((query['guild_id'] == guild_id_var) & (query['member'] == str(member)))
+    embed = discord.Embed(title=f"Here are the warnings for {member.mention}:", description="Warnings")
+    if len(a) == 0:
+        embed = discord.Embed(title="This user has a MIND BLOWING number of warnings!!",
+                              description="0, to be exact",
+                              color=discord.Color.green())
+        embed.set_footer(text="Clean record for now, eh?")
+    else:
+        i = 0
+        for a in a:
+            i += 1
+            b = a.get('reason')
+            embed.add_field(name=f"{i}. ", value=b, inline=False)
+        embed.set_footer(text="Someone's been a naughty boi. Unless you're a girl.")
+        embed.color = 0xa6ff00
 
     await ctx.send(embed=embed)
 
 
 @bot.command()
 async def lockdown(ctx, state):
+    db = TinyDB('databases/lockdown.json')
+    query = Query()
     if ctx.author.guild_permissions.administrator:
         guild = ctx.guild
         everyone = discord.utils.get(guild.roles)
+        unaffected_channels = []
         if state.lower() == 'true':
-            embed = discord.Embed(
-                title="Turned on lockdown. No one gets in or out <a:ZOWumpusTongue:865559251764903946>")
-            embed.set_footer(text="Corona is ONLINE")
-            embed.color = discord.Color.red()
-            await ctx.send(embed=embed)
-            for channel in guild.channels:
-                await channel.set_permissions(everyone, send_messages=False,
-                                              speak=False)
+            if db.search(query.guild == ctx.guild.id)[0]['state'] is False:
+                embed = discord.Embed(
+                    title="Turned on lockdown. No one gets in or out <a:ZOWumpusTongue:865559251764903946>")
+                embed.set_footer(text="Corona is ONLINE")
+                embed.color = discord.Color.red()
+                await ctx.send(embed=embed)
+                for channel in guild.text_channels:
+                    perms = ctx.channel.overwrites_for(ctx.guild.default_role)
+                    if perms.send_messages is False or perms.view_channel is False:
+                        unaffected_channels.append(channel.id)
+                        continue
+                    await channel.set_permissions(everyone, send_messages=False)
+
+                for channel in guild.voice_channels:
+                    perms = ctx.channel.overwrites_for(ctx.guild.default_role)
+                    if perms.send_messages is False or perms.view_channel is False:
+                        unaffected_channels.append(channel.id)
+                        continue
+                    await channel.set_permissions(everyone, speak=False)
+                db.update({'unaffected_channels': unaffected_channels}, query.guild == ctx.guild.id)
+                db.update({'state': True}, query.guild == ctx.guild.id)
+            else:
+                await ctx.send(embed=discord.Embed(title="This channel is ALREADY under lockdown",
+                                                   description="You can be arrested by law if you place a lockdown TWICE.",
+                                                   color=discord.Color.random()))
 
         elif state.lower() == 'false':
-            embed = discord.Embed(title="Lockdown has been lifted.... Enjoy Suckas <a:ZOPepeRave:865560322966421514>")
-            embed.set_footer(text="Corona go poof ")
-            embed.color = discord.Color.green()
-            await ctx.send(embed=embed)
-            for channel in guild.channels:
-                await channel.set_permissions(everyone, send_messages=True,
-                                              speak=True)
+            if db.search(query.guild == ctx.guild.id)[0]['state'] is True:
+                print(db.search(query.guild == ctx.guild.id)[0]['unaffected_channels'])
+                unaffected_channels = db.search(query.guild == ctx.guild.id)[0]['unaffected_channels']
+                embed = discord.Embed(
+                    title="Lockdown has been lifted.... Enjoy Suckas <a:ZOPepeRave:865560322966421514>")
+                embed.set_footer(text="Corona go poof ")
+                embed.color = discord.Color.green()
+                await ctx.send(embed=embed)
+                for channel in guild.text_channels:
+                    if channel.id in unaffected_channels:
+                        print(channel)
+                    else:
+                        await channel.set_permissions(everyone, send_messages=None)
+                for channel in guild.voice_channels:
+                    if channel.id in unaffected_channels:
+                        print(channel)
+                    else:
+                        await channel.set_permissions(everyone, speak=None)
+                db.update({'state': False}, query.guild == ctx.guild.id)
+
+            else:
+                await ctx.send(embed=discord.Embed(title="This channel is ALREADY free",
+                                                   description="Don't give too much freedom. It will lead to chaos.",
+                                                   color=discord.Color.random()))
 
         else:
-            embed = discord.Embed(title="Please give a valid state, True or false", description="Try `!lockdown true`",
+            embed = discord.Embed(title="Please give a valid state, True or false",
+                                  description="Try `!lockdown true` or `!lockdown false`",
                                   color=discord.Color.random())
             await ctx.send(embed=embed)
     else:
         await ctx.send(
-            embed=discord.Embed(title="Stop right there!", description="You require the Manage roles permission.",
+            embed=discord.Embed(title="Stop right there!", description="You require the Administrator permission.",
                                 color=discord.Color.red()))
 
 
@@ -738,7 +870,6 @@ async def tempmute(ctx, duration: TimeConverter, member: discord.Member, *, reas
 
 @bot.command()
 async def mute(ctx, member: discord.Member, *, reason="No reason given"):
-    guild = ctx.guild
     if ctx.author.guild_permissions.administrator:
         if member == ctx.author:
             embed = discord.Embed(title="Why would you even DO that?",
@@ -747,25 +878,17 @@ async def mute(ctx, member: discord.Member, *, reason="No reason given"):
             embed.set_footer(text="Sometimes I just wonder...")
 
             await ctx.send(embed=embed)
-        return
+            return
 
-        if member.guildpermissions.administrator:
+        if member.guild_permissions.administrator:
             embed = discord.Embed(title="Nuh uh not happening",
                                   description="You can't just mute your fellow admins.",
                                   color=discord.Color.random())
             await ctx.send(embed=embed)
             return
 
-        guild=ctx.guild
+        guild = ctx.guild
         mutedRole = discord.utils.get(guild.roles, name="Is Muted")
-
-        if member == ctx.author:
-            embed = discord.Embed(title="Why would you even DO that?",
-                                  description=f"Did you really just try to mute yourself? :person_facepalming: \nOnce you've figured out what your trying to do with life, :face_with_raised_eyebrow:\n Type \"y\" if you still wanna do this :pensive: or\n Type \"n\" to save yourself.",
-                                  color=discord.Color.random())
-            embed.set_footer(text="Sometimes I just wonder...")
-
-            await ctx.send(embed=embed)
 
         if mutedRole is None:
             perms = discord.Permissions(speak=False, send_messages=False, read_message_history=True, read_messages=True)
@@ -789,18 +912,16 @@ async def mute(ctx, member: discord.Member, *, reason="No reason given"):
 
 
 @bot.command()
-async def kick(ctx,
-               member: discord.Member):  # read itbut we now have 15 minutes left u will have to fix the ban and stuff and all with speed WHERE ARE U?
-    guild = ctx.guild
+async def kick(ctx, member: discord.Member):
     if ctx.author.guild_permissions.kick_members:
         if member == ctx.author:
             embed = discord.Embed(title="Why would you even DO that?",
                                   description=f"Did you really just try to kick yourself? :person_facepalming:",
                                   color=discord.Color.random())
             embed.set_footer(text="Sometimes I just wonder...")
-
             await ctx.send(embed=embed)
             return
+
         if member.guild_permissions.administrator:
             embed = discord.Embed(title="Nuh uh not happening",
                                   description="You can't just kick your fellow admins.",
@@ -811,7 +932,7 @@ async def kick(ctx,
         message = f"You have been kicked from {ctx.guild.name}"
         await member.send(message)
         await ctx.guild.kick(member)
-        await ctx.channel.send(f"{member} is kicked!")
+        await ctx.channel.send(embed=discord.Embed(title=f"{member} is kicked!"), color=discord.Color.random())
 
     else:
         await ctx.send(
@@ -825,39 +946,32 @@ async def unban(ctx, member: discord.User = None):
         if member is None or member == ctx.message.author:
             await ctx.channel.send("You cannot unban yourself")
             return
-
-        message = f"You have been unbanned from {ctx.guild.name}."
-
-        await member.send(message)
         await ctx.guild.unban(member)
-        await ctx.channel.send(f"{member} is unbanned!")
+        await ctx.channel.send(embed=discord.Embed(title=f"{member} is unbanned!", color=discord.Color.random()))
 
     else:
         await ctx.send(
             embed=discord.Embed(title="Stop right there!", description="You require the Ban Member permission.",
                                 color=discord.Color.green()))
 
-@commands.has_permissions(ban_members=True)
-@bot.command()
-async def tempban(ctx, duration: TimeConverter, member: discord.User = None, *, reason=None):
-    boolean1 = True
-    guild = ctx.guild
-    if duration != 0:
-        if ctx.author.guild_permissions.administrator:
-            if member is None or member == ctx.message.author or member.guild_permissions.administrator:
-                if member == ctx.author:
-                    embed = discord.Embed(title="Why would you even DO that?",
-                                          description=f"Did you really just try to ban yourself? :person_facepalming:",
-                                          color=discord.Color.random())
-                    embed.set_footer(text="Sometimes I just wonder...")
 
-                    await ctx.send(embed=embed)
-                if member.guildpermissions.administrator:
-                    embed = discord.Embed(title="Nuh uh not happening",
-                                          description="You can't just ban your fellow admins.",
-                                          color=discord.Color.random())
-                    await ctx.send(embed=embed)
-                    return
+@bot.command()
+async def tempban(ctx, duration: TimeConverter, member: discord.Member, *, reason=None):
+    if duration != 0:
+        if member == ctx.author:
+            embed = discord.Embed(title="Why would you even DO that?",
+                                  description=f"Did you really just try to ban yourself? :person_facepalming:\nEven temporarily, that's just stupid.",
+                                  color=discord.Color.random())
+            embed.set_footer(text="Sometimes I just wonder...")
+            await ctx.send(embed=embed)
+            return
+
+        if member.guild_permissions.administrator:
+            embed = discord.Embed(title="Nuh uh not happening",
+                                  description="You can't just ban your fellow admins temporarily!",
+                                  color=discord.Color.random())
+            await ctx.send(embed=embed)
+            return
 
         if ctx.author.guild_permissions.ban_members:
             banned_gifs = ["https://media.tenor.com/images/d41f93e7538f0afb56ad1450fed9c02e/tenor.gif",
@@ -876,7 +990,8 @@ async def tempban(ctx, duration: TimeConverter, member: discord.User = None, *, 
             invite = await ctx.channel.create_invite()
             embed = discord.Embed(
                 title=f"You have been banned from {ctx.guild.name} for {reason}",
-                description=f"Use this {str(invite)} to join after {duration}s"
+                description=f"Use this {str(invite)} to join after {duration}s",
+                color=discord.Color.random()
             )
             embed.set_image(url=random.choice(banned_gifs))
             await member.send(embed=embed)
@@ -884,6 +999,7 @@ async def tempban(ctx, duration: TimeConverter, member: discord.User = None, *, 
             embed1 = discord.Embed(
                 title=f"{member.display_name} has been banned for {reason}",
                 description=f"They will be allowed to return in {duration}s",
+                color=discord.Color.random()
             )
             embed1.set_image(url=random.choice(banned_gifs))
             await ctx.send(embed=embed1)
@@ -891,7 +1007,8 @@ async def tempban(ctx, duration: TimeConverter, member: discord.User = None, *, 
             await ctx.guild.unban(member)
             await ctx.channel.send(embed=discord.Embed(
                 title=f"{member.display_name} has been unbanned.",
-                description=f"They will be here soon enough..."
+                description=f"They will be here soon enough...",
+                color=discord.Color.random()
             ))
 
         else:
@@ -899,10 +1016,9 @@ async def tempban(ctx, duration: TimeConverter, member: discord.User = None, *, 
                 embed=discord.Embed(title="Stop right there!", description="You require the Ban Member permission.",
                                     color=discord.Color.green()))
 
-@commands.has_permissions(ban_members=True)
+
 @bot.command()
 async def ban(ctx, member: discord.Member, *, reason=None):
-    guild = ctx.guild
     if ctx.author.guild_permissions.ban_members:
         banned_gifs = ["https://media.tenor.com/images/d41f93e7538f0afb56ad1450fed9c02e/tenor.gif",
                        "https://media.tenor.com/images/048b3da98bfc09b882d3801cb8eb0c1f/tenor.gif",
@@ -910,29 +1026,26 @@ async def ban(ctx, member: discord.Member, *, reason=None):
                        "https://media.tenor.com/images/fe829734d0d3b1d5faf7bb92c1a951aa/tenor.gif",
                        "https://media.tenor.com/images/1a84c478d1073757cf8929a89e47bbfc/tenor.gif"]
 
-        if ctx.author.guild_permissions.administrator:
-            if member is None or member == ctx.message.author or member.guild_permissions.administrator:
-                if member == ctx.author:
-                    embed = discord.Embed(title="Why would you even DO that?",
-                                          description=f"Did you really just try to ban yourself? :person_facepalming: ",
-                                          color=discord.Color.random())
-                    embed.set_footer(text="Sometimes I just wonder...")
+        if member == ctx.message.author:
+            if member == ctx.author:
+                embed = discord.Embed(title="Why would you even DO that?",
+                                      description=f"Did you really just try to ban yourself? :person_facepalming: ",
+                                      color=discord.Color.random())
+                embed.set_footer(text="Sometimes I just wonder...")
 
-                    await ctx.send(embed=embed)
-                    return
-                if member.guild_permissions.administrator:
-                    embed = discord.Embed(title="Nuh uh not happening",
-                                          description="You can't just ban your fellow admins.",
-                                          color=discord.Color.random())
-                    await ctx.send(embed=embed)
-                    return
-
+                await ctx.send(embed=embed)
+                return
+        if member.guild_permissions.administrator:
+            embed = discord.Embed(title="Nuh uh not happening",
+                                  description="You can't just ban your fellow admins.",
+                                  color=discord.Color.random())
+            await ctx.send(embed=embed)
+            return
 
         if reason is None:
             reason = "No reason specified"
-        message = f"You have been banned from {ctx.guild.name} for {reason}"
-
-        await member.send(message)
+        message = discord.Embed(title=f"You have been banned from {ctx.guild.name} for {reason}", color=discord.Color.random())
+        await member.send(embed=message)
         await ctx.guild.ban(member)
         await ctx.channel.send(f"{member} is banned!")
         embed1 = discord.Embed(
@@ -941,6 +1054,7 @@ async def ban(ctx, member: discord.Member, *, reason=None):
         )
         embed1.set_image(url=random.choice(banned_gifs))
         await ctx.send(embed=embed1)
+
     else:
         await ctx.send(
             embed=discord.Embed(title="Stop right there!", description="You require the Ban Member permission.",
@@ -954,41 +1068,48 @@ async def dictionary(ctx, *, keyword):
     def check(what_to_do):
         return ctx.author == what_to_do.author and what_to_do.channel == ctx.channel
 
-    await ctx.send(embed=discord.Embed(title="What would you like to find?"))
+    await ctx.send(embed=discord.Embed(title="What would you like to find?", color=discord.Color.random()))
     what_to_do = await bot.wait_for("message", check=check)
-    print(str(what_to_do))
 
-    if str(what_to_do.content).lower() == "meaning":
-        meaning = dictionary.meaning(keyword)
-        print(len(meaning['Noun']))
-        print(len(meaning['Verb']))
-        embed = discord.Embed(title=f"The Meaning of {keyword}.")
+    try:
+        if "meaning" in str(what_to_do.content).lower():
+            try:
+                meaning = dictionary.meaning(keyword)
+                embed = discord.Embed(title=f"The Meaning of {keyword}.", color=discord.Color.random())
 
-        if meaning.get('Noun') is not None:
-            for i in range(0, len(meaning['Noun'])):
-                embed.add_field(name=f"Meaning {i + 1}:", value=f"{(meaning['Noun'])[i]}")
-        if meaning.get('Verb') is not None:
-            for i in range(0, len(meaning['Verb'])):
-                embed.add_field(name=f"Meaning {i + 1}:", value=f"{(meaning['Verb'])[i]}")
-        await ctx.send(embed=embed)
+                if meaning.get('Noun') is not None:
+                    for i in range(0, len(meaning['Noun'])):
+                        embed.add_field(name=f"Meaning {i + 1}:", value=f"{(meaning['Noun'])[i]}")
+                if meaning.get('Verb') is not None:
+                    for i in range(0, len(meaning['Verb'])):
+                        embed.add_field(name=f"Meaning {i + 1}:", value=f"{(meaning['Verb'])[i]}")
+                await ctx.send(embed=embed)
+            except:
+                print('Meaning not found')
 
-    elif str(what_to_do.content).lower() == "synonyms" or "synonym":
-        synonym_list = dictionary.synonym(keyword)
-        string = ""
-        for i in range(0, len(synonym_list)):
-            string += f"{i + 1}. {synonym_list[i]}\n"
-        embed = discord.Embed(title=f"The Synonyms of {keyword}.", description=string)
-        await ctx.send(embed=embed)
+        if "synonym" in str(what_to_do.content).lower():
+            try:
+                synonym_list = dictionary.synonym(keyword)
+                string = ""
+                for i in range(0, len(synonym_list)):
+                    string += f"{i + 1}. {synonym_list[i]}\n"
+                embed = discord.Embed(title=f"The Synonyms of {keyword}.", description=string, color=discord.Color.random())
+                await ctx.send(embed=embed)
+            except:
+                print('Synonym not found')
 
-    elif str(what_to_do.content).lower() == "antonyms" or "antonym":
-        antonym_list = dictionary.antonym(keyword)
-        string = ""
-        for i in range(0, len(antonym_list)):
-            string += f"{i + 1}. {antonym_list[i]}\n"
-        embed = discord.Embed(title=f"The Antonyms of the {keyword}.", description=string)
-        await ctx.send(embed=embed)
+        if "antonym" in str(what_to_do.content).lower():
+            try:
+                antonym_list = dictionary.antonym(keyword)
+                string = ""
+                for i in range(0, len(antonym_list)):
+                    string += f"{i + 1}. {antonym_list[i]}\n"
+                embed = discord.Embed(title=f"The Antonyms of the {keyword}.", description=string, color=discord.Color.random())
+                await ctx.send(embed=embed)
+            except:
+                print('Antonym not found')
 
-    else:
+    except:
         embed = discord.Embed(title="Error could not find")
         await ctx.send(embed=embed)
 
@@ -996,6 +1117,7 @@ async def dictionary(ctx, *, keyword):
 @bot.command()
 async def translate(ctx, *, keyword):
     translator = Translator()
+
     def check(translate_to):
         return ctx.author == translate_to.author and translate_to.channel == ctx.channel
 
@@ -1009,7 +1131,8 @@ async def translate(ctx, *, keyword):
         embed.add_field(name="Possible Issues",
                         value="1. You have typed an invalid language.\n2. We don't support this language (if this is the case, come to our support server)")
     else:
-        embed = discord.Embed(title="Translate", description=f"{translation.origin} ({translation.src}) --> {translation.text} ({translation.dest})")
+        embed = discord.Embed(title="Translate",
+                              description=f"{translation.origin} ({translation.src}) --> {translation.text} ({translation.dest})")
     embed.color = discord.Color.random()
 
     await ctx.send(embed=embed)
@@ -1071,12 +1194,18 @@ async def weather(ctx, *, place):
 
 @bot.command()
 async def urban(ctx, *, keyword: str):
-    list = (urbandict.define(keyword))
-    embed = discord.Embed(title=f"Meaning of {keyword} in urban dict.")
-    for i in range(0, len(list) - 1):
-        embed.add_field(name=f"Type {i + 1}:",
-                        value=f"Word: {(list[i])['word']}\n Definition: {(list[i])['def']}\n Examples: {(list[i])['example']}")
-    await ctx.send(embed=embed)
+    try:
+        list = (urbandict.define(keyword))
+        embed = discord.Embed(title=f"Meaning of {keyword} in urban dict.")
+        for i in range(0, len(list) - 1):
+            embed.add_field(name=f"Type {i + 1}:",
+                            value=f"Word: {(list[i])['word']}\n Definition: {(list[i])['def']}\n Examples: {(list[i])['example']}",
+                            inline=False,
+                            color=discord.Color.random())
+        await ctx.send(embed=embed)
+    except:
+        await ctx.send(embed=discord.Embed(title=f"Sorry mate i couldn't find sh*t for", description=f"```{keyword}```",
+                                           color=discord.Color.random()))
 
 
 @bot.command()
@@ -1092,7 +1221,6 @@ async def ask(ctx, *, question):
             bool = True
     if bool == False:
         return await ctx.send("Invalid question format.")
-    print(question)
 
     embed = discord.Embed(title=question, description=
     random.choice([
@@ -1109,16 +1237,30 @@ async def ask(ctx, *, question):
     ]), color=discord.Color.blue())
     await ctx.send(embed=embed)
 
-
+@commands.cooldown(1, 30, commands.BucketType.guild)
 @bot.command()
 async def repeat(ctx, times, *, msg):
-    times = int(times)
-    if times <= 70:
-        for times in range(0, times):
-            await ctx.send(msg)
-    else:
-        await ctx.send(
-            embed=discord.Embed(title="That is too much for me to handle, try below 70", color=discord.Color.random()))
+    try:
+        times = int(times)
+        if '@' in str(msg):
+          await ctx.send(embed=discord.Embed(title="Imagine spam pinging someone",color=discord.Color.random()))
+          return
+        if 0 < times <= 70:
+            for times in range(0, times):
+                await ctx.send(msg)
+        elif times < 0:
+            await ctx.send(embed=discord.Embed(title="I don't spam a negative number of times."),
+                           color=discord.Color.random())
+        elif times == 0:
+            await ctx.send(embed=discord.Embed(title="Done -_-"),
+                           color=discord.Color.random())
+        else:
+            await ctx.send(
+                embed=discord.Embed(title="That is too much for me to handle, try a number below 70",
+                                    color=discord.Color.random()))
+    except:
+        await ctx.send(embed=discord.Embed(title="I need a NUMBER"),
+                       color=discord.Color.random())
 
 
 @bot.command()
@@ -1175,18 +1317,31 @@ async def simprate(ctx, member: discord.Member = None):
 
 
 @bot.command()
-async def poll(ctx, duration: TimeConverter, question, *args):
+async def poll(ctx, duration: TimeConverter, *, argument: str):
     if duration != 0:
         voters = []
         vote_counts = {}
 
-        options = []
+        if ':' in argument:
+            split_question = argument.split(':', maxsplit=1)
+            question = split_question[0]
+        else:
+            await ctx.send(embed=discord.Embed(title="You must put a colon(:) after your poll question.", color=discord.Color.random()))
+            return
+
+        if ',' in split_question[1]:
+            options = split_question[1].split(',')
+
+        else:
+            await ctx.send(embed=discord.Embed(title="You must put a comma(,) after each poll options.", color=discord.Color.random()))
+            return
+
         react_to_option = {}
         description = ""
-        for i, arg in enumerate(args):
-            description += emojiLetters[i] + " " + arg + "\n"
-            options.append(arg)
-            react_to_option[emojiLetters[i]] = arg
+        for i, option in enumerate(options):
+            option = options[i]
+            description += emojiLetters[i] + " " + option + "\n"
+            react_to_option[emojiLetters[i]] = option
         print(react_to_option)
         # Initialize vote_counts dictionary
         for option in options:
@@ -1207,6 +1362,13 @@ async def poll(ctx, duration: TimeConverter, question, *args):
         # Get votes
         reaction = None
 
+        #this dms ppl
+        for member in ctx.guild.members:
+            if not member.bot:
+                await member.send(embed=discord.Embed(title=f"There is a new poll in {ctx.guild.name}.",
+                                                      description="Please check it out; it may be important!",
+                                                      color=discord.Color.random()))
+
         # Ensure reaction is to the poll message and the reactor is not the bot
         def check(reaction, user):
             return reaction.message.id == message.id and user.id != 861828663958831185
@@ -1214,7 +1376,8 @@ async def poll(ctx, duration: TimeConverter, question, *args):
         while True:  # Exit after a certain time
             try:
                 reaction, user = await bot.wait_for('reaction_add', timeout=1.0, check=check)
-                await message.remove_reaction(reaction, user)
+                if not user.bot:
+                    await message.remove_reaction(reaction, user)
                 # Check if the user has already voted
                 if user not in voters:
                     voters.append(user)
@@ -1244,13 +1407,18 @@ async def poll(ctx, duration: TimeConverter, question, *args):
 
 
     else:
-        await ctx.send("Please mention a valid duration!")
+        await ctx.send(embed=discord.Embed(title="Please mention a valid duration!"), color=discord.Color.random())
 
 
 @bot.command()
 async def ascii(ctx, *, txt: str):
     txt = await commands.clean_content().convert(ctx, txt)
-    result = pyfiglet.figlet_format(txt)
+    split_text = txt.split(' ', maxsplit=1)
+    if split_text[0].lower() == 'remove':
+        await ctx.message.delete()
+        result = pyfiglet.figlet_format(split_text[1])
+    else:
+        result = pyfiglet.figlet_format(txt)
     await ctx.send("```" + result + "```")
 
 
@@ -1328,7 +1496,7 @@ async def choose(ctx, *choices: str):
         title=f"I choose...",
         description=f"{random.choice(choices)}"
     )
-    embed.color = 0x0000ff
+    embed.color = discord.Color.random()
     embed.set_footer(
         text=f"It is better and I am awesome")
     await ctx.send(embed=embed)
@@ -1384,11 +1552,40 @@ async def guess(ctx, lower, upper):
     boolean = False
     lower = int(lower)
     upper = int(upper)
+    if upper < lower:
+        embed = discord.Embed(title="Nope :satisfied:",
+                              description="Your upper limit CANNOT BE less then your lower limit smh")
+        embed.set_footer(text="Like, wth dude")
+        embed.color = discord.Color.random()
+        await ctx.send(embed=embed)
+        return
+    if upper == lower:
+        embed = discord.Embed(title="Nope :satisfied:",
+                              description="Think about it.\nIf your lower limit is the same as the upper limit, you can't really guess anything.")
+        embed.set_footer(text=f"Basically, its obviously {upper} rn")
+        embed.color = discord.Color.random()
+        await ctx.send(embed=embed)
+        return
+    if lower < 0:
+        embed = discord.Embed(title="Nope :satisfied:",
+                              description="Your limits can only be positive numbers.")
+        embed.set_footer(text="Dont' even THINK about it")
+        await ctx.send(embed=embed)
+        embed.color = discord.Color.random()
+        return
+    if upper > 10000:
+        embed = discord.Embed(title="Nope :satisfied:",
+                              description="Your upper limit can only be equal to or less than 10000.")
+        embed.set_footer(text="Dont' even THINK about it")
+        embed.color = discord.Color.random()
+        await ctx.send(embed=embed)
+        return
     x = random.randint(lower, upper)
     embed = discord.Embed(
         title=f"You have {round(math.log(upper - lower + 1, 2))} chances to guess the number!",
         description="Good Luck :thumbsup:"
     )
+    embed.color = discord.Color.random()
     await ctx.send(embed=embed)
     count = 1
 
@@ -1402,49 +1599,58 @@ async def guess(ctx, lower, upper):
         guess = int(str(msg.content))
 
         if x == guess:
-            await ctx.send(embed=discord.Embed(
+            embed = discord.Embed(
                 title=f"You did it! :partying_face:",
                 description=f"You have guessed the number!\n It was {x}"
-            ))
+            )
+            embed.color = discord.Color.random()
+            await ctx.send(embed=embed)
             boolean = True
             break
 
         elif x > guess:
-            if (round(math.log(upper - lower + 1, 2)) - count+1) == 0:
+            if (round(math.log(upper - lower + 1, 2)) - count + 1) == 0:
                 break
-            await ctx.send(embed=discord.Embed(
+            embed = discord.Embed(
                 title=f"You guessed too low! :arrow_down:",
-                description=f"You have {round(math.log(upper - lower + 1, 2)) - count+1} remaining!"
-            ))
+                description=f"You have {round(math.log(upper - lower + 1, 2)) - count + 1} remaining!"
+            )
+            embed.color = discord.Color.random()
+            await ctx.send(embed=embed)
 
         elif x < guess:
-            if (round(math.log(upper - lower + 1, 2)) - count+1) == 0:
+            if (round(math.log(upper - lower + 1, 2)) - count + 1) == 0:
                 break
-            await ctx.send(embed=discord.Embed(
+            embed = discord.Embed(
                 title=f"You guessed too high! :arrow_up:",
-                description=f"You have {round(math.log(upper - lower + 1, 2)) - count+1} remaining!"
-            ))
+                description=f"You have {round(math.log(upper - lower + 1, 2)) - count + 1} remaining!"
+            )
+            embed.color = discord.Color.random()
+            await ctx.send(embed=embed)
 
-        if round(math.log(upper - lower + 1, 2)) - count+1 == 0:
+        if round(math.log(upper - lower + 1, 2)) - count + 1 == 0:
             break
 
     if boolean is False:
-        await ctx.send(embed=discord.Embed(title="Better luck next time!",
-                                           description=f"The number was {x}"))
+        embed = discord.Embed(title="Better luck next time!",
+                              description=f"The number was {x}")
+        embed.color = discord.Color.random()
+        await ctx.send(embed=embed)
 
 
 @bot.command()
 async def hack(ctx, member: discord.User):
     extensions_list = ["au", "in", "us", "uk", "fr"]
     emails_list = [f"{str(member.name)}@gmail.com",
-                   f"{str(member.name)}@yahoo.co.{extensions_list[random.randint(1, 5)]}",
+                   f"{str(member.name)}@yahoo.co.{extensions_list[random.randint(0, 4)]}",
                    f"{str(member.name)}_is_cool@smallppmail.com",
                    f"{member.name}{str(random.randint(1, 100))}{str(random.randint(1, 100))}{str(random.randint(1, 100))}@gmail.com",
                    f"{str(member.name)}@oogamail.{random.choice(extensions_list)}"]
     passwords_list = [f"Deadpool{str(random.randint(1, 20))}{str(random.randint(1, 20))}{str(random.randint(1, 20))}",
                       "Ineedfriends123", "ChamakChalo!@", "OogaBooga69", "@d****isaqt", "IluvCoffinDance2020"]
     dms_list = ["Yo i got ignored by her again", "Yup it's 3 inches", "Man i wanna punch you", "I really need friends",
-                "Sure k", "THATS WHAT SHE SAID", "OOH GET REK'D", "lmao", "ooga", "That's cool"]
+                "Sure k", "THATS WHAT SHE SAID", "OOH GET REK'D", "lmao", "ooga", "That's cool",
+                "NOOO DONT FRIENDZONE ME PLSSSSSSS"]
     common_words = ["mom", "cringe", "LOL", "bOb", "pp", "yes", "ooga"]
     IPS = ["46.193.82.45",
            "19.139.7.84",
@@ -1507,6 +1713,8 @@ async def hack(ctx, member: discord.User):
     await message.edit(embed=hack_embed_5)
     await asyncio.sleep(5)
     await message.edit(embed=hack_embed_6)
+    await asyncio.sleep(5)
+    await message.edit(embed=hack_embed_7)
 
 
 def adjust_text(text, draw, font):
@@ -1617,248 +1825,257 @@ async def chad(ctx, user: discord.Member = None):
 @bot.command()
 async def vcmeme(ctx, *, meme: str):
     if meme != None:
-        channel = ctx.message.author.voice.channel
-        print(channel)
+        try:
+            channel = ctx.message.author.voice.channel
+            print(channel)
+        except:
+            ctx.send("JOIN A CHANNEL FIRST!!!!")
+            return
         voice = get(bot.voice_clients, guild=ctx.guild)
 
         if voice and voice.is_connected():
             await voice.move_to(channel)
             if "20th century" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/20th Century.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/20th Century.mp3'))
             elif "airhorn" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/AirHorn.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/AirHorn.mp3'))
                 print("Airhorn.....")
             elif "big pew pew" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Big pew pew.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Big pew pew.mp3'))
 
             elif "censor" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/CENSOR BEEP.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/CENSOR BEEP.mp3'))
 
             elif "denied" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/DENIED.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/DENIED.mp3'))
 
             elif "drum roll" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/DRUM ROLL.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/DRUM ROLL.mp3'))
 
             elif "dun dun dun" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/DUN DUN DUN.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/DUN DUN DUN.mp3'))
 
             elif "elevator music" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Elevator Music.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Elevator Music.mp3'))
 
             elif "headshot" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Headshot.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Headshot.mp3'))
 
             elif "explosion" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/EXPLOSION.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/EXPLOSION.mp3'))
             elif "hidden agenda" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/HIDDEN AGENDA.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/HIDDEN AGENDA.mp3'))
 
             elif "huh" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Huh.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Huh.mp3'))
 
             elif "illuminati confirmed" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Illuminati Confirmed.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Illuminati Confirmed.mp3'))
 
             elif "investigations" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/INVESTIGATIONS.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/INVESTIGATIONS.mp3'))
 
             elif "oof" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Oof.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Oof.mp3'))
 
             elif "pew" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/pew.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/pew.mp3'))
 
             elif "pew pew" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/pew pew.wav'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/pew pew.wav'))
 
             elif "reee" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/REEEEE.m4a'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/REEEEE.m4a'))
 
             elif "sad music" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/SAD MUSIC.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/SAD MUSIC.mp3'))
 
             elif "say what" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/SAY WHAT.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/SAY WHAT.mp3'))
 
             elif "sneaky snitch" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/SNEAKY SNITCH.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/SNEAKY SNITCH.mp3'))
 
             elif "stop right there" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/STOP RIGHT THERE.m4a'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/STOP RIGHT THERE.m4a'))
 
             elif "surprise mf" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Surprise Mf.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Surprise Mf.mp3'))
 
             elif "why are you running" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Why are you running.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Why are you running.mp3'))
 
             elif "why you bully me" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Why you bully me.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Why you bully me.mp3'))
 
             elif "wow" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/WOW.m4a'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/WOW.m4a'))
 
             elif "yeet" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/YEET.m4a'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/YEET.m4a'))
             elif "yay" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/YAY.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/YAY.mp3'))
             elif "you got it dude" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/You got it dude.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/You got it dude.mp3'))
             else:
-                await ctx.voice_client.disconnect()
+                embed2 = discord.Embed(title=f"The meme {meme} was not found!",
+                                       description="Thanks for wasting my time!",
+                                       color=discord.Color.Red())
+                embed2.add_field(
+                    f"If you would like the owners to add a voice meme, [click here](https://zeroandone.ml/contact/)")
+                await ctx.send(embed=embed2)
+                voice.disconnect()
 
         else:
             voice = await channel.connect()
             if "20th century" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/20th Century.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/20th Century.mp3'))
             elif "airhorn" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/AirHorn.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/AirHorn.mp3'))
                 print("Airhorn.....")
             elif "big pew pew" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Big pew pew.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Big pew pew.mp3'))
 
             elif "censor" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/CENSOR BEEP.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/CENSOR BEEP.mp3'))
 
             elif "denied" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/DENIED.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/DENIED.mp3'))
 
             elif "drum roll" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/DRUM ROLL.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/DRUM ROLL.mp3'))
 
             elif "dun dun dun" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/DUN DUN DUN.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/DUN DUN DUN.mp3'))
 
             elif "elevator music" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Elevator Music.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Elevator Music.mp3'))
 
             elif "headshot" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Headshot.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Headshot.mp3'))
 
             elif "explosion" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/EXPLOSION.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/EXPLOSION.mp3'))
             elif "hidden agenda" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/HIDDEN AGENDA.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/HIDDEN AGENDA.mp3'))
 
             elif "huh" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Huh.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Huh.mp3'))
 
             elif "illuminati confirmed" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Illuminati Confirmed.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Illuminati Confirmed.mp3'))
 
             elif "investigations" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/INVESTIGATIONS.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/INVESTIGATIONS.mp3'))
 
             elif "oof" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Oof.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Oof.mp3'))
 
             elif "pew" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/pew.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/pew.mp3'))
 
             elif "pew pew" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/pew pew.wav'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/pew pew.wav'))
 
             elif "reee" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/REEEEE.m4a'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/REEEEE.m4a'))
 
             elif "sad music" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/SAD MUSIC.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/SAD MUSIC.mp3'))
 
             elif "say what" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/SAY WHAT.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/SAY WHAT.mp3'))
 
             elif "sneaky snitch" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/SNEAKY SNITCH.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/SNEAKY SNITCH.mp3'))
 
             elif "stop right there" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/STOP RIGHT THERE.m4a'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/STOP RIGHT THERE.m4a'))
 
             elif "surprise mf" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Surprise Mf.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Surprise Mf.mp3'))
 
             elif "why are you running" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Why are you running.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Why are you running.mp3'))
 
             elif "why you bully me" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/Why you bully me.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Why you bully me.mp3'))
 
             elif "wow" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/WOW.m4a'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/WOW.m4a'))
 
             elif "yeet" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/YEET.m4a'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/YEET.m4a'))
             elif "yay" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/YAY.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/YAY.mp3'))
             elif "you got it dude" in meme.lower():
-                voice.play(discord.FFmpegPCMAudio(executable=r'ffmpeg-N-102848-gb7ba472f43-win64-gpl/bin/ffmpeg.exe',
-                                                  source='sounds/You got it dude.mp3'))
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/You got it dude.mp3'))
             else:
+                embed2 = discord.Embed(title=f"The meme {meme} was not found!",
+                                       description="Thanks for wasting my time!",
+                                       color=discord.Color.Red())
+                embed2.add_field(
+                    f"If you would like the owners to add a voice meme, [click here](https://zeroandone.ml/contact/)")
+                await ctx.send(embed=embed2)
                 voice.disconnect()
-    else:
-
-        embed2 = discord.Embed(title=f"The meme {meme} was not found!", description="Thanks for wasting my time!",
-                               color=discord.Color.Red())
-        embed2.add_field(
-            f"If you would like the owners to add a voice meme, [click here](https://zeroandone.ml/contact/)")
-        await ctx.send(embed=embed2)
 
 
 @vcmeme.error
@@ -1902,6 +2119,10 @@ async def vcmeme_error(ctx, error):
         await ctx.send(embed=embed2)
 
 
+    else:
+        raise (error)
+
+
 @bot.command()
 async def shoo(ctx):
     try:
@@ -1920,26 +2141,26 @@ snipe_message_content = {}
 @bot.command()
 async def quote(ctx, quoter, *, quote):
     embed = discord.Embed(
-        description=f"{quote}"
+        description=f"\"*{quote}*\""
     )
     embed.color = discord.Color.random()
     quote = await commands.clean_content().convert(ctx, quoter)
-    embed.set_footer(text=f"By {quote.replace('@', '')}")
+    embed.set_footer(text=f"- {quote.replace('@', '')}")
     await ctx.send(embed=embed)
 
 
 @bot.command()
 async def rps(ctx, *, msg=None):
     if msg is None:
-        embed = discord.Embed(
-            title="Well that's just stupid...",
-            description=f"Why would u not choose any option?"
-        )
-        embed.color = 0x000fff
-        embed.set_footer(text="Why are we still here...")
-        await ctx.send(embed=embed)
+        await ctx.send(embed=discord.Embed(title="You might wanna", description="CHOOSE SOMETHING!!",
+                                           color=discord.Color.random()))
 
-    else:
+        return
+
+    if '@' in msg:
+        msg = await commands.MemberConverter().convert(ctx, msg)
+
+    if isinstance(msg, str):
         t = ["rock", "paper", "scissors"]
         computer = t[random.randint(0, 2)]
         player = msg.lower()
@@ -1951,7 +2172,7 @@ async def rps(ctx, *, msg=None):
             embed.set_footer(text="Its not over yet...")
             await ctx.send(embed=embed)
 
-        elif player == "rock":
+        elif player == "rock" or player == "r":
             if computer == "paper":
                 embed = discord.Embed(
                     title="You lose!",
@@ -1967,7 +2188,7 @@ async def rps(ctx, *, msg=None):
                 embed.set_footer(text="GG")
                 await ctx.send(embed=embed)
 
-        elif player == "paper":
+        elif player == "paper" or player == "p":
             if computer == "scissors":
                 embed = discord.Embed(
                     title="You lose!",
@@ -1983,7 +2204,7 @@ async def rps(ctx, *, msg=None):
                 embed.set_footer(text="GG")  # dont test yet im almost done too
                 await ctx.send(embed=embed)
 
-        elif player == "scissors":
+        elif player == "scissors" or player == "s" or player == "s":
             if computer == "rock":
                 embed = discord.Embed(
                     title="You lose!",
@@ -1997,7 +2218,7 @@ async def rps(ctx, *, msg=None):
                     description=f"{t[2]} cut {t[1]}".format(player, computer))
                 embed.color = 0x000fff
                 embed.set_footer(text="GG")
-                await ctx.send(embed=embed)  # stop pls i must test code wait 2 mins pls? no mine wont take 3 seconds
+                await ctx.send(embed=embed)
 
         else:
             embed = discord.Embed(
@@ -2008,25 +2229,329 @@ async def rps(ctx, *, msg=None):
             await ctx.send(embed=embed)
 
 
+    elif isinstance(msg, discord.Member):
+        embed1 = discord.Embed(title=f"Hello!! So you have challenged {msg.name} to an epic rock paper scissor battle!",
+                               description="Enter your choice from Rock,Paper,Scissors here",
+                               color=discord.Color.random())
+        embed2 = discord.Embed(
+            title=f"Hello! So you have been challenged by {ctx.author.name} to an epic rock paper scissor battle!",
+            description="Enter your choice from Rock, Paper or Scissors here (if you wanna play)",
+            color=discord.Color.random())
+        embed2.set_footer(text="Otherwise just ignore me like everyone else (SOB SOB)")
+        await ctx.send("<a:ZO_DMS:871341236236193792>")
+        await ctx.author.send(embed=embed1)
+        await msg.send(embed=embed2)
+
+        def check1(message):
+            return message.author == ctx.author and str(message.channel.type) == "private"
+            print(message.type)
+
+        def check2(message):
+            return message.author == msg and str(message.channel.type) == "private"
+
+        try:
+            reply1 = await bot.wait_for('message', check=check1, timeout=60)
+            reply2 = await bot.wait_for('message', check=check2, timeout=60)
+            player = reply2.content.lower()
+            challenger = reply1.content.lower()
+            playerName = msg.name
+            challengerName = ctx.author.name
+            if player == challenger:
+                embed = discord.Embed(
+                    title="Tie",
+                    description=f"Both played {player}!")
+                embed.color = 0x000fff
+                embed.set_footer(text="Its not over yet...")
+                await ctx.send(embed=embed)
+
+            elif player == "rock":
+                if challenger == "paper":
+                    embed = discord.Embed(
+                        title=f"{challengerName} wins!",
+                        description=f"Paper[{challengerName}] covers Rock[{playerName}]!!")
+                    embed.color = 0x000fff
+                    embed.set_footer(text=f"Sad life {playerName}...")
+                    await ctx.send(embed=embed)
+                else:
+                    embed = discord.Embed(
+                        title=f"{playerName} wins!",
+                        description=f"Rock[{playerName}] breaks Scissors[{challengerName}]!!")
+                    embed.color = 0x000fff
+                    embed.set_footer(text=f"Sad life {challengerName}...")
+                    await ctx.send(embed=embed)
+
+            elif player == "paper":
+                if challenger == "scissors":
+                    embed = discord.Embed(
+                        title=f"{challengerName} wins!",
+                        description=f"Scissors[{challengerName}] cut paper[{playerName}]!!")
+                    embed.color = 0x000fff
+                    embed.set_footer(text=f"Sad life {playerName}...")
+                    await ctx.send(embed=embed)
+                else:
+                    embed = discord.Embed(
+                        title=f"{playerName} wins!",
+                        description=f"Paper[{playerName}] covers rock[{challengerName}]!!")
+                    embed.color = 0x000fff
+                    embed.set_footer(text=f"Sad life {challengerName}...")
+                    await ctx.send(embed=embed)
+
+            elif player == "scissors":
+                if challenger == "rock":
+                    embed = discord.Embed(
+                        title=f"{challengerName} wins!",
+                        description=f"Rock[{challengerName}] breaks scissors[{playerName}]!!")
+                    embed.color = 0x000fff
+                    embed.set_footer(text=f"Sad life {playerName}...")
+                    await ctx.send(embed=embed)
+                else:
+                    embed = discord.Embed(
+                        title=f"{playerName} wins!",
+                        description=f"Scissors[{playerName}] cut paper[{challengerName}]!!")
+                    embed.color = 0x000fff
+                    embed.set_footer(text=f"Sad life {challengerName}...")
+                    await ctx.send(embed=embed)
+
+            else:
+                embed = discord.Embed(
+                    title="Well either you dont want to play or you have not spelled correctly",
+                    description=f"Why are you like this.... :rolling_eyes:")
+                embed.color = 0x000fff
+                embed.set_footer(text="Imagine being such a spoil sport")
+                await ctx.send(embed=embed)
+
+        except asyncio.TimeoutError:
+            await ctx.send(embed=discord.Embed(title="That kid didn't answer in time",
+                                               description="THEY IGNORED MEEEEE <a:ZO_Cry:871340549725102081>"))
+
+    else:
+        await ctx.send(embed=discord.Embed(title="You might wanna", description="CHOOSE SOMETHING USEFUL",
+                                           color=discord.Color.random()))
+
+
+@bot.command()
+async def oddeve(ctx, *, msg=None):
+    if msg is None:
+        await ctx.send(embed=discord.Embed(title="You might wanna", description="CHOOSE SOMETHING!!\n try odd or even",
+                                           color=discord.Color.random()))
+        return
+
+    if '@' in msg:
+        msg = await commands.MemberConverter().convert(ctx, msg)
+
+    if isinstance(msg, str):
+        if msg.lower() == "odd":
+            euro = "odd"
+
+        elif msg.lower() == "even":
+            euro = "even"
+
+        else:
+            embed = discord.Embed(
+                title="What the hell bruh",
+                description=f"You have managed to put an invalid option in odds n evens.\nIts either odd or even :rolling_eyes:",
+                color=discord.Color.random()
+            )
+            embed.color = 0x000fff
+            embed.set_footer(text="Imagine having just 3 brain cells")
+            await ctx.send(embed=embed)
+            return
+
+        await ctx.send(embed=discord.Embed(title="Please select a number for 0 to 9", color=discord.Color.random()))
+
+        def check1(message):
+            return message.author == ctx.author
+
+        msg1 = await bot.wait_for('message', check=check1, timeout=60)
+        num1 = int(msg1.content)
+        if num1 >= 10 or num1 < 0:
+            await ctx.send(
+                embed=discord.Embed(title="WHAT PART OF 1 TO 9 DO YOU NOT UNDERSTAND", color=discord.Color.random()))
+            return
+
+        n = i = 0
+        while i < 1:
+            n = random.randint(0, 9)
+            i += 1
+
+        sum = int(num1) + int(n)
+        await ctx.send(embed=discord.Embed(title=f"I played {n} and you played {num1} and it adds up to {sum}",
+                                           color=discord.Color.random()))
+
+        if (sum % 2 == 0):
+            if euro == "even":
+                await ctx.send(embed=discord.Embed(title="Result is even", description="You win! \n GGs",
+                                                   color=discord.Color.random()))
+
+            else:
+                await ctx.send(embed=discord.Embed(title="Result Is even", description="You lose! \n sed leef",
+                                                   color=discord.Color.random()))
+
+        else:
+            if euro == "even":
+                await ctx.send(embed=discord.Embed(title="Result Is Odd", description="You lose! \n sed leef",
+                                                   color=discord.Color.random()))
+
+            else:
+                await ctx.send(embed=discord.Embed(title="Result Is Odd", description="You win! \n GGs",
+                                                   color=discord.Color.random()))
+
+
+
+
+    elif isinstance(msg, discord.Member):
+        player = ""
+        challenger = ""
+
+        def check3(message):
+            return message.author == ctx.author
+
+        def check1(message):
+            return message.author == ctx.author and str(message.channel.type) == "private"
+
+        def check2(message):
+            return message.author == msg and str(message.channel.type) == "private"
+
+        embed3 = discord.Embed(
+            title=f"Hey {ctx.author.display_name}, as you have started the match, you get to choose....",
+            description="Choose whether you want \"Odd\" or \"even\"", color=discord.Color.random())
+        await ctx.send(embed=embed3)
+        try:
+            reply3 = await bot.wait_for('message', check=check3, timeout=60)
+            author_choice = reply3.content.lower()
+
+            if author_choice == "odd":
+                challenger = "odd"
+                player = "even"
+                await ctx.send(f"Alright you have chosen {challenger} so that makes {msg.display_name} {player}")
+
+            elif author_choice == "even":
+                challenger = "even"
+                player = "odd"
+                await ctx.send(f"Alright you have chosen {challenger} so that makes {msg.display_name} {player}")
+
+            else:
+                embed = discord.Embed(
+                    title="What the hell bruh",
+                    description=f"You have managed to put an invalid option in odds n evens Its either odd or even :rolling_eyes:",
+                    color=discord.Color.random())
+                embed.color = 0x000fff
+                embed.set_footer(text="Imagine having just 3 brain cells")
+                await ctx.send(embed=embed)
+
+        except asyncio.TimeoutError:
+            await ctx.send(embed=discord.Embed(title="You didn't answer in time",
+                                               description="HOW DARE YOU IGNORED ME <a:ZO_Cry:871340549725102081>"))
+            return
+
+        embed1 = discord.Embed(title=f"Hello!! So you have challenged {msg.name} to an epic odds and evens battle!",
+                               description=f"Enter your number from 0 to 9 here\n And remember, you are {challenger}")
+
+        embed2 = discord.Embed(
+            title=f"Hello!! So you have been challenged by {ctx.author.name} to an odds and evens battle!!",
+            description=f"Enter your number from 0 to 9 here(if you wanna play)\n And remember, you are {player}")
+        embed2.set_footer(text="Otherwise just ignore me like everyone else (SOB SOB)")
+        await ctx.send("<a:ZO_DMS:871341236236193792>")
+        await ctx.author.send(embed=embed1)
+        await msg.send(embed=embed2)
+
+        try:
+
+            reply1 = await bot.wait_for('message', check=check1, timeout=60)
+            reply2 = await bot.wait_for('message', check=check2, timeout=60)
+            playerno = int(reply2.content)
+            challengerno = int(reply1.content)
+            playerName = msg.name
+            challengerName = ctx.author.name
+
+            if playerno >= 10 or playerno <= 0 or challengerno >= 10 or challengerno <= 0:
+                await ctx.send(embed=discord.Embed(title="WHAT PART OF 1 TO 9 DO YOU NOT UNDERSTAND",
+                                                   description="You ruined the game man", color=discord.Color.random()))
+                return
+
+            sum = int(challengerno) + int(playerno)
+            await ctx.send(embed=discord.Embed(
+                title=f"{challengerName} played {challengerno} and {playerName} played {playerno} and it adds up to {sum}",
+                color=discord.Color.random()))
+
+            if (sum % 2 == 0):
+                if player == "even":
+                    await ctx.send(
+                        embed=discord.Embed(title="Result is even", description=f"{playerName} wins! \n Poggers",
+                                            color=discord.Color.random()))
+
+                else:
+                    await ctx.send(
+                        embed=discord.Embed(title="Result Is even", description=f"{challengerName} wins! \n Poggers",
+                                            color=discord.Color.random()))
+
+            else:
+                if player == "odd":
+                    await ctx.send(
+                        embed=discord.Embed(title="Result Is Odd", description=f"{playerName} wins! \n Poggers",
+                                            color=discord.Color.random()))
+
+                else:
+                    await ctx.send(
+                        embed=discord.Embed(title="Result Is Odd", description=f"{challengerName} wins! \n Poggers",
+                                            color=discord.Color.random()))
+
+
+        except asyncio.TimeoutError:
+            await ctx.send(embed=discord.Embed(title="That kid didn't answer in time",
+                                               description="THEY IGNORED MEEEEE <a:ZO_Cry:871340549725102081>"))
+
+    else:
+        await ctx.send(embed=discord.Embed(title="You might wanna", description="CHOOSE SOMETHING USEFUL",
+                                           color=discord.Color.random()))
+
+
 @bot.command()
 async def button(ctx):
-    embed = discord.Embed(
-        title="Website",
-        color=discord.Color.red(),
+    await ctx.send(
+        "Hello, World!",
+        components=[
+            Button(label="WOW button!")
+        ]
+    )
+    interaction = await bot.wait_for("button_click", check=lambda i: i.component.label.startswith("WOW"))
+
+    await interaction.respond(content="Button clicked!")
+
+
+@bot.command()
+async def select(ctx):
+    await ctx.send(
+
+        "Hello, World!",
+
+        components=[
+
+            Select(placeholder="select something!",
+                   options=[SelectOption(label="a", value="A"), SelectOption(label="b", value="B")])
+
+        ]
+
     )
 
-    await ctx.send(embed=embed, components=[
-        Button(style=ButtonStyle.URL, label="Open Website",
-               url="https://zeroandone.ml/?i=1")]
-                   )
+    interaction = await bot.wait_for("select_option", check=lambda i: i.component[0].value == "A")
+
+    await interaction.respond(content=f"{interaction.component[0].label} selected!")
 
 
 @slowmode.error
 async def slowmode_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.channel.edit(slowmode_delay=0)
-        await ctx.send(embed=discord.Embed(title="Slowmode disabled!", color=discord.Color.dark_magenta(),
-                                           description="Now y'all can talk your heart out"))
+        if ctx.author.guild_permissions.administrator:
+            await ctx.channel.edit(slowmode_delay=0)
+            await ctx.send(embed=discord.Embed(title="Slowmode disabled!", color=discord.Color.dark_magenta(),
+                                               description="Now y'all can talk your heart out"))
+
+        else:
+            await ctx.send(
+                embed=discord.Embed(title="Stop right there!", description="You require the Administrators permission.",
+                                    color=discord.Color.green()))
+
     if isinstance(error, commands.BadArgument):
         await ctx.send(
             embed=discord.Embed(title="How hard is it to set a slowmode :rolling_eyes: ", color=discord.Color.magenta(),
@@ -2063,7 +2588,7 @@ async def userinfo_error(ctx, error):
         embed = discord.Embed(title="At least try to...",
                               description="Wish you'd actually try to tell me who to get info from.",
                               color=discord.Color.random())
-        embed.set_footer(text="Sigh")  # buddy we need to fix missing perms error :(
+        embed.set_footer(text="Sigh")
         await ctx.send(embed=embed)
 
     else:
@@ -2127,14 +2652,14 @@ async def edit_error(ctx, error):
     member = ctx.author
     if isinstance(error, commands.MissingRequiredArgument):
         embed = discord.Embed(title="I didn't find this role.",
-                              description="{member.mention} please mention the role to edit **AND** the new role.",
+                              description=f"{member.mention} please mention the role to edit **AND** the new role.",
                               color=discord.Color.random())
         embed.set_footer(text="Imagine being able to write bot commands properly...")
         await ctx.send(embed=embed)
 
     elif isinstance(error, commands.RoleNotFound):
         embed = discord.Embed(title="I didn't find this role.",
-                              description=f"{member.mention}Mentioning a valid role couldn't HURT you know...",
+                              description=f"{member.mention} Mentioning a valid role couldn't HURT you know...",
                               color=discord.Color.random())
         embed.set_footer(text="The validity check never ends...")
         await ctx.send(embed=embed)
@@ -2302,7 +2827,6 @@ async def clear_error(ctx, error):
 
 @warn.error
 async def warn_error(ctx, error):
-    member = ctx.author
     if isinstance(error, commands.MissingRequiredArgument):
         embed = discord.Embed(title=f"Alright I'll bite",
                               description=f"Who am I supposed to warn?",
@@ -2310,8 +2834,8 @@ async def warn_error(ctx, error):
         embed.set_footer(text="Mentioning that wud be gr8")
         await ctx.send(embed=embed)
 
-    elif isinstance(error, commands.UserNotFound):
-        embed = discord.Embed(title=f"I couldn't fin this user.",
+    elif isinstance(error, commands.MemberNotFound):
+        embed = discord.Embed(title=f"I couldn't find this user.",
                               description=f"So instead I warned my friend Louis here...",
                               color=discord.Color.random())
         embed.set_footer(text="Wait... what have you done to Louis?")
@@ -2340,6 +2864,43 @@ async def userwarn_error(ctx, error):
         raise (error)
 
 
+@rps.error
+async def rps_error(ctx, error):
+    member = ctx.author
+    if isinstance(error, commands.MemberNotFound):
+        embed = discord.Embed(title=f"Ok no",
+                              description=f"Reminding you that playing rps with an imaginary user is not allowed.... Just play singleplayer mate",
+                              color=discord.Color.random())
+        embed.set_footer(text="Kids these days...")
+        await ctx.send(embed=embed)
+    else:
+        raise (error)
+
+
+@oddeve.error
+async def oddeve_error(ctx, error):
+    member = ctx.author
+    if isinstance(error, commands.MemberNotFound):
+        embed = discord.Embed(title=f"Ok no",
+                              description=f"Reminding you that playing with an imaginary user is not allowed.... Just play singleplayer mate",
+                              color=discord.Color.random())
+
+        embed.set_footer(text="Kids these days...")
+        await ctx.send(embed=embed)
+
+
+
+    elif isinstance(error, commands.errors.CommandInvokeError):
+        embed = discord.Embed(title=f"No shit",
+                              description=f"I take numbers only for your choice",
+                              color=discord.Color.random())
+        embed.set_footer(text="Kids these days...")
+        await ctx.send(embed=embed)
+
+    else:
+        raise (error)
+
+
 @lockdown.error
 async def lockdown_error(ctx, error):
     member = ctx.author
@@ -2350,9 +2911,9 @@ async def lockdown_error(ctx, error):
         embed.set_footer(text="That's how that works")
         await ctx.send(embed=embed)
 
+
     else:
         raise (error)
-
 
 
 @unmute.error
@@ -2385,7 +2946,6 @@ async def unmute_error(ctx, error):
 
 @kick.error
 async def kick_error(ctx, error):
-    member = ctx.author
     if isinstance(error, commands.MissingRequiredArgument):
         embed = discord.Embed(title=f"Mention the user please",
                               description=f"I cannot kick the void obviously",
@@ -2396,9 +2956,9 @@ async def kick_error(ctx, error):
 
     elif isinstance(error, commands.MemberNotFound):
         embed = discord.Embed(title=f"I really don't like this",
-                              description=f"Pretty sure that Mr. Nothing didn't exist in the first place.",
+                              description=f"Pretty sure that this person didn't exist in the first place.",
                               color=discord.Color.random())
-        embed.set_footer(text="unmuting nothing is a horrific idea")
+        embed.set_footer(text="Kicking the air... *shudder")
         await ctx.send(embed=embed)
 
     elif isinstance(error, commands.errors.CommandInvokeError):
@@ -2407,13 +2967,13 @@ async def kick_error(ctx, error):
                               color=discord.Color.random())
         embed.set_footer(text="I feel weak")
         await ctx.send(embed=embed)
+
     else:
         raise (error)
 
 
 @mute.error
 async def mute_error(ctx, error):
-    member = ctx.author
     if isinstance(error, commands.MissingRequiredArgument):
         embed = discord.Embed(title=f"Muting is not nice...",
                               description=f"But if you insist on it, mention *WHO* you want to mute.",
@@ -2491,10 +3051,9 @@ async def ban_error(ctx, error):
 
 @tempban.error
 async def tempban_error(ctx, error):
-    member = ctx.author
     if isinstance(error, commands.MissingRequiredArgument):
         embed = discord.Embed(title=f"Sure thing buddy",
-                              description=f"Ima tempban my old buddy Louis.",
+                              description=f"Ima tempban my old buddy Louis. Oh wait...",
                               color=discord.Color.random())
         embed.set_footer(text="I think that's why I couldn't find him be4")
         await ctx.send(embed=embed)
@@ -2508,13 +3067,9 @@ async def tempban_error(ctx, error):
 
 
     elif isinstance(error, commands.errors.CommandInvokeError):
-
         embed = discord.Embed(title=f"Nope, the member is more powerful than me",
-
                               description=f"Maybe put my role above him :pleading_face:",
-
                               color=discord.Color.random())
-
         embed.set_footer(text="I feel weak")
         await ctx.send(embed=embed)
 
@@ -2539,7 +3094,7 @@ async def unban_error(ctx, error):
         embed.set_footer(text="This is sarcasm")
         await ctx.send(embed=embed)
 
-    elif isinstance(error, commands.commands.errors.CommandInvokeError):
+    elif isinstance(error, commands.errors.CommandInvokeError):
         embed = discord.Embed(title=f"Hold up!",
                               description=f"What do you think I am? The server owner?\nI can't do that, I don't got the permission!",
                               color=discord.Color.random())
@@ -2554,8 +3109,8 @@ async def unban_error(ctx, error):
 async def dict_error(ctx, error):
     member = ctx.author
     if isinstance(error, commands.MissingRequiredArgument):
-        embed = discord.Embed(title=f"Nice try buddy.",
-                              description=f"But you can't make me ban people who have more power then I do.",
+        embed = discord.Embed(title=f"Alright.",
+                              description=f"The definition of nothing is ___. It probably has synonyms and antonyms, but idrc.",
                               color=discord.Color.random())
         embed.set_footer(text="Im not stupid")
         await ctx.send(embed=embed)
@@ -2573,7 +3128,6 @@ async def translate_error(ctx, error):
                               color=discord.Color.random())
         embed.set_footer(text="Why you being like this")
         await ctx.send(embed=embed)
-
     else:
         raise (error)
 
@@ -2625,7 +3179,7 @@ async def ask_error(ctx, error):
     member = ctx.author
     if isinstance(error, commands.MissingRequiredArgument):
         embed = discord.Embed(title=f"What were you asking again?",
-                              description=f"All I heard was _____________",
+                              description=f"All I heard was ___",
                               color=discord.Color.random())
         embed.set_footer(text="Either I'm deaf, or you didn't even ask.")
         await ctx.send(embed=embed)
@@ -2644,6 +3198,18 @@ async def repeat_error(ctx, error):
         embed.set_footer(text="You'd just be staring at the screen then")
         await ctx.send(embed=embed)
 
+    elif isinstance(error, commands.errors.CommandInvokeError):
+        embed = discord.Embed(title=f"Ik spamming is fun sometimes",
+                              description=f"But it would be really helpful if you give me number of times i have to spam?",
+
+                              color=discord.Color.random())
+        embed.set_footer(text=f"They expect me to repeat stuff without telling me how many times")
+        await ctx.send(embed=embed)
+
+    elif isinstance(error, commands.CommandOnCooldown):
+        em = discord.Embed(title=f"Slow it down bro!",description=f"Try again in {error.retry_after:.0f}s.", color=discord.Color.random())
+        em.set_footer(text="Bruh I know spam is fun but keep it a bit down")
+        await ctx.send(embed=em)
     else:
         raise (error)
 
@@ -2651,7 +3217,7 @@ async def repeat_error(ctx, error):
 @epicgamerrate.error
 async def gamerrate_error(ctx, error):
     member = ctx.author
-    if isinstance(error, commands.UserNotFound):
+    if isinstance(error, commands.MemberNotFound):
         embed = discord.Embed(title=f"I wish I knew how EPIC this user is.",
                               description=f"But sadly he doesn't exist.",
                               color=discord.Color.random())
@@ -2700,6 +3266,13 @@ async def ascii_error(ctx, error):
         embed.set_footer(text="smh smh SMH")
         await ctx.send(embed=embed)
 
+    elif isinstance(error, commands.errors.CommandInvokeError):
+        embed = discord.Embed(title=f"BRUHH!",
+                              description=f"That is too big to send!!",
+                              color=discord.Color.random())
+        embed.set_footer(text="That's what she said")
+        await ctx.send(embed=embed)
+
     else:
         raise (error)
 
@@ -2711,9 +3284,15 @@ async def binary_error(ctx, error):
         embed = discord.Embed(title=f"Well you didn't input anything",
                               description=f"I'm assuming you want the binary code of a space key.\nIt's `00100000",
                               color=discord.Color.random())
-        embed.set_footer(text="Im sure that you didn't want the binary of space did you?")
+        embed.set_footer(text="Tho you didn't want the binary of space did you?")
         await ctx.send(embed=embed)
 
+    if isinstance(error, discord.ext.commands.errors.CommandInvokeError):
+        embed = discord.Embed(title="Chill out dude",
+                              description="I can't send you something that long.\nTry putting a shorter message.",
+                              color=discord.Color.random())
+        embed.set_footer(text="That was going to be SO difficult to send")
+        await ctx.send(embed=embed)
     else:
         raise (error)
 
@@ -2885,7 +3464,7 @@ async def help(ctx, command=None):
                                value="Gives the  information of the member specified...\n!help userinfo",
                                inline=False)
         help_embed_1.add_field(name="ServerInfo",
-                               value="provides the information about the server.\n!help serverinfo",
+                               value="Provides the information about the server.\n!help serverinfo",
                                inline=False)
         help_embed_1.add_field(name="Nick",
                                value="Change nicknames in the server by using this feature.\n!help nick",
@@ -2897,7 +3476,7 @@ async def help(ctx, command=None):
                                value="Allows You to restore the last deleted message of the channel.\n!help snipe",
                                inline=False)
         help_embed_1.add_field(name="Invite",
-                               value="Gives you the link to invite ME!\n!help invite",
+                               value="Gives you the link to invite me to your servers!\n!help invite",
                                inline=False)
         help_embed_1.add_field(name="Support",
                                value="Gives you my support server invite!\n!help support",
@@ -2906,6 +3485,7 @@ async def help(ctx, command=None):
                                value="Takes you to my devs' website!\n!help website",
                                inline=False)
         help_embed_1.set_footer(text="Page 1")
+        help_embed_1.color = discord.Color.random()
 
         help_embed_2 = discord.Embed(title="Moderation")
         help_embed_2.add_field(name="Slowmode",
@@ -2934,7 +3514,7 @@ async def help(ctx, command=None):
         help_embed_2.add_field(name="Mute",
                                value="Stop user from typing in the server.\n!help mute",
                                inline=False)
-        help_embed_2.add_field(name="Kick", value="Kicks user from the server.\n!help kick",
+        help_embed_2.add_field(name="Kick", value="Kicks the specified user from the server.\n!help kick",
                                inline=False)
         help_embed_2.add_field(name="Unban", value="Unbans users, obviously.\n!help unban",
                                inline=False)
@@ -2943,7 +3523,7 @@ async def help(ctx, command=None):
         help_embed_2.add_field(name="Ban", value="Bans users, like, DUH.\n!help ban",
                                inline=False)
         help_embed_2.set_footer(text="Page 2")
-
+        help_embed_2.color = discord.Color.random()
         help_embed_3 = discord.Embed(title="Information")
         help_embed_3.add_field(name="Dictionary",
                                value="Finds dictionary meanings, synonyms, antonyms and translations.\n!help dictionary",
@@ -2961,60 +3541,65 @@ async def help(ctx, command=None):
                                value="Allows you took access the Urban Dictionary.\n!help urban",
                                inline=False)
         help_embed_3.set_footer(text="Page 3")
-
+        help_embed_3.color = discord.Color.random()
         help_embed_4 = discord.Embed(title="Fun")
         help_embed_4.add_field(name="Ask",
                                value="Honestly answers a question you may have.\n!help ask",
                                inline=False)
         help_embed_4.add_field(name="Repeat", value="Repeats your message.\n!help repeat",
                                inline=False)
-        help_embed_4.add_field(name="Dice", value="GRoles a dice for you.\n!help dice",
+        help_embed_4.add_field(name="Dice", value="Roles a dice for you.\n!help dice",
                                inline=False)
-        help_embed_4.add_field(name="epicgamerrate",
-                               value="Tells you how EPIK you are at gaming.\n!help epicgamerrate",
+        help_embed_4.add_field(name="EpicGamerRate",
+                               value="Tells you how EPIC you are at gaming.\n!help epicgamerrate",
                                inline=False)
-        help_embed_4.add_field(name="simprate",
+        help_embed_4.add_field(name="SimpRate",
                                value="Tells you how much you are simping.\n!help simprate",
                                inline=False)
-        help_embed_4.add_field(name="Poll", value="Created a poll for you.\n!help poll",
+        help_embed_4.add_field(name="Poll", value="Creates a poll for you.\n!help poll",
                                inline=False)
         help_embed_4.add_field(name="Script",
                                value="Translates the Zero&One script.\n!help script",
                                inline=False)
 
         help_embed_4.add_field(name="Binary",
-                               value="Converts string to binary as zeros and ones are cool",
+                               value="Converts string to binary as zeros and ones are cool\n!help binary",
                                inline=False)
         help_embed_4.add_field(name="ASCII",
                                value="Creates a cool ASCII art for you.\n!help ascii",
                                inline=False)
         help_embed_4.add_field(name="Chooser",
-                               value="Let's you choose between the given options.\n!help chooser",
+                               value="Lets you choose between the given options.\n!help chooser",
                                inline=False)
         help_embed_4.add_field(name="Coinflip", value="Flips a coin for you.\n!help coinflip",
                                inline=False)
         help_embed_4.add_field(name="Guess",
-                               value="Let's guess a number within any range.\n!help guess",
+                               value="Lets you guess a number within any range.\n!help guess",
                                inline=False)
         help_embed_4.add_field(name="Hack", value="Hacks the required user.\n!help hack",
                                inline=False)
         help_embed_4.add_field(name="ImageMemes",
                                value="Makes some very funny image memes for you.\n!help imagememes",
                                inline=False)
-        help_embed_4.add_field(name="VCMemes",
+        help_embed_4.add_field(name="VCMeme",
                                value="Let's you have some fun with the people in your VC.\n!help vcmeme",
                                inline=False)
         help_embed_4.add_field(name="Quote",
                                value="Allows you to quote the sayings of your fellow human beings.\n!help quote",
                                inline=False)
         help_embed_4.set_footer(text="Page 4")
+        help_embed_4.color = discord.Color.random()
 
-        help_embed_5 = discord.Embed(title="Games (or just, game, for now...)")
-        help_embed_5.add_field(name="rps",
-                               value="Let's you play rock paper scissor with me!\n!help rps",
+        help_embed_5 = discord.Embed(title="Games")
+        help_embed_5.add_field(name="Rps",
+                               value="Lets you play rock paper scissor with me **OR** your friends!\n!help rps",
                                inline=False)
-        help_embed_5.set_footer(text="More games coming soon!")
+        help_embed_5.add_field(name="OddEve",
+                               value="Lets you play odd eve with me **OR** your friends!\n(cricket version coming out soon)\n!help rps",
+                               inline=False)
+        help_embed_5.add_field(name="More games coming soon!", value="You better believe it!")
         help_embed_5.set_footer(text="Page 5")
+        help_embed_5.color = discord.Color.random()
 
         message = await ctx.send(embed=help_embed_1)
 
@@ -3091,7 +3676,7 @@ async def help(ctx, command=None):
 
     elif command.lower() == 'makerole':
         embed = discord.Embed(title="Help MakeRole",
-                              description="At last, with just one command, you can simply make a new role in your server.",
+                              description="At last, with just one command, you can make a new role in your server.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
@@ -3126,7 +3711,7 @@ async def help(ctx, command=None):
 
     elif command.lower() == 'removerole':
         embed = discord.Embed(title="Help RemoveRole",
-                              description="If your members misuse their roles then there is one solution:\n Take the role away from them!",
+                              description="If your members misuse their roles then there is only one solution:\n Take the role away from them!",
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
@@ -3138,11 +3723,11 @@ async def help(ctx, command=None):
 
     elif command.lower() == 'deleterole':
         embed = discord.Embed(title="Help DeleteRole",
-                              description="You can also add roles to your members by just using this one command!",
+                              description="You can also delete roles in your server when the role just becomes useless.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!addrole @<membername> @<rolename>\nImagine needing to delete roles ANYWAY...")
+                        value="!deleterole @<rolename>\nImagine needing to delete roles ANYWAY...")
         embed.set_footer(
             text="Only people with manage roles perms can use this so DON'T EVEN TRY, PEASANTS")
         await ctx.send(embed=embed)
@@ -3150,11 +3735,11 @@ async def help(ctx, command=None):
 
     elif command.lower() == 'support':
         embed = discord.Embed(title="Help Support",
-                              description="Need help with the my commands.\nWanna complain about something.\nMaybe make a suggestion?",
+                              description="Need help with the my commands?\nWanna complain about them?\nMaybe make a suggestion?",
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:", value="!support\nSo you can visit our support server.")
-        embed.set_footer(text="Get help its good for you")
+        embed.set_footer(text="Get support its good for you")
         await ctx.send(embed=embed)
 
     elif command.lower() == 'userinfo':
@@ -3200,7 +3785,7 @@ async def help(ctx, command=None):
 
 
     elif command.lower() == 'snipe':
-        embed = discord.Embed(title="Help ServerInfo",
+        embed = discord.Embed(title="Help Snipe",
                               description="Find out what the last deleted message in your server was.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
@@ -3216,7 +3801,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!about\nPlease use this :pleading_face:\nYou. can't. get. enough. of. me.")
+                        value="!about\nPlease use this :pleading_face:\nYou. Can't. Get. Enough. Of. Me.")
         embed.set_footer(text="I'm the BEST")
         await ctx.send(embed=embed)
 
@@ -3281,7 +3866,7 @@ async def help(ctx, command=None):
                               description="Basically stops EVERYONE from using the channel.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
-        embed.add_field(name="Usage:", value="!lockdown\nFor total Hitler-style servers.")
+        embed.add_field(name="Usage:", value="!lockdown <trueorfalse>\nFor total Monarchy servers.")
         embed.set_footer(text="Imagine needing lockdown in discord...")
         await ctx.send(embed=embed)
 
@@ -3292,13 +3877,13 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!warn\nOnly for those naughty users who don't like rules.")
-        embed.set_footer(text="You've been warned...")
+                        value="!warn <username> <reason>\nOnly for those naughty users who don't like rules.")
+        embed.set_footer(text="So you've been warned...")
         await ctx.send(embed=embed)
 
 
     elif command.lower() == 'userwarn':
-        embed = discord.Embed(title="Help Clear",
+        embed = discord.Embed(title="Help UserWarn",
                               description="Gives a record of why and how many times a user was warned in the server.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
@@ -3359,7 +3944,7 @@ async def help(ctx, command=None):
                               inline=True)
         embed.add_field(name="Usage:",
                         value="!unban @<username>\nSo that they can return to the server.")
-        embed.set_footer(text="Oh look, their back lol")
+        embed.set_footer(text="Oh look, they're back lol")
         await ctx.send(embed=embed)
 
 
@@ -3391,8 +3976,8 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!dictionary <whatyouwannado> <word>\nWhat you can do is get meanings, synonyms, antonyms and translations into languages!")
-        embed.set_footer(text="All for nerds!")
+                        value="!dictionary <word>\nWhat you can do is get meanings, synonyms and antonyms!\nThen you type either meanings, synonyms or antonyms.")
+        embed.set_footer(text="All for geeky lil nerds!")
         await ctx.send(embed=embed)
 
 
@@ -3402,8 +3987,8 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!translate <wordtotranslate>\nAnd then you enter the language translate to.\nCan only translate FROM ENGLISH.")
-        embed.set_footer(text="Bonjour!")
+                        value="!translate <wordtotranslate>\nAnd then you enter the language translate to.")
+        embed.set_footer(text="Merci!")
         await ctx.send(embed=embed)
 
 
@@ -3420,7 +4005,7 @@ async def help(ctx, command=None):
 
     elif command.lower() == 'wiki':
         embed = discord.Embed(title="Help Wiki",
-                              description="Search the Wikipedia.",
+                              description="Search Wikipedia.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
@@ -3429,7 +4014,7 @@ async def help(ctx, command=None):
         await ctx.send(embed=embed)
 
 
-    elif command.lower() == 'urbandictionary':
+    elif command.lower() == 'urban':
         embed = discord.Embed(title="Help UrbanDictionary",
                               description="Let's you use the Urban Dictionary (like, obviously).",
                               colour=discord.colour.Colour.green(),
@@ -3457,14 +4042,14 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!repeat <messagetorepeat>\nAWhy do I have to do the dirty work?")
-        embed.set_footer(text="TJust don't get blacklisted lol")
+                        value="!repeat <messagetorepeat>\nWhy do I have to do the dirty work?")
+        embed.set_footer(text="Just don't get blacklisted lol")
         await ctx.send(embed=embed)
 
 
     elif command.lower() == 'dice':
         embed = discord.Embed(title="Help Dice",
-                              description="Makes me role a dice for you.",
+                              description="Makes me **role**(pun intended) a dice for you.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:", value="!dice\nYou get a random number for 1 to 6! Yay!")
@@ -3488,7 +4073,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:", value="!simprate\nThis is totally true btw")
-        embed.set_footer(text="It's a perfect way of knowing how bad you are!")
+        embed.set_footer(text="It's a perfect way of knowing how simpy you are!")
         await ctx.send(embed=embed)
 
 
@@ -3498,7 +4083,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!poll <timeinseconds> <Whatyoupollfor> <options>\nYEveryone can just choose what they wanna choose.")
+                        value="!poll <timeinseconds> <whatyoupollfor>: <optionswithcommas>\nEveryone can just choose what they wanna choose.")
         embed.set_footer(text="I don't think there is any other way to poll on discord...")
         await ctx.send(embed=embed)
 
@@ -3534,7 +4119,7 @@ async def help(ctx, command=None):
         embed.set_footer(text="Zeros and Ones are cool")
         await ctx.send(embed=embed)
 
-    elif command.lower() == 'choose':
+    elif command.lower() == 'choose' or command.lower() == 'chooser':
         embed = discord.Embed(title="Help Choose",
                               description="Makes a choice for you.",
                               colour=discord.colour.Colour.green(),
@@ -3563,13 +4148,13 @@ async def help(ctx, command=None):
                               inline=True)
         embed.add_field(name="Usage:",
                         value="!guess <lowerboundary> <upperboundary>\nThen you just guess ig...")
-        embed.set_footer(text="Bet you can't win in 1 - 1000")
+        embed.set_footer(text="Bet you can't beat my dev Zero in 1 - 10000")
         await ctx.send(embed=embed)
 
 
     elif command.lower() == 'hack':
         embed = discord.Embed(title="Help Hack",
-                              description="Totally hacks the user pc.",
+                              description="Totally hacks the targeted user pc.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
@@ -3590,26 +4175,48 @@ async def help(ctx, command=None):
 
 
     elif command.lower() == 'vcmeme':
-        embed = discord.Embed(title="Help VCMemes",
+        embed = discord.Embed(title="Help VCMeme",
                               description="Prank your friends in your VC.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
                         value="!vcmeme <chosenvcmeme>\nThe list is long...\nTo check the list, type !vcmemes list")
-        embed.set_footer(text="I fell sorry for VC users...")
+        embed.set_footer(text="I feel sorry for VC users...")
         await ctx.send(embed=embed)
 
 
     elif command.lower() == 'quote':
         embed = discord.Embed(title="Help Quote",
-                              # i solved server info             description="Creates a quote so you can remember your most famous sayings!",
+                              description="Creates a quote so you can remember your most famous sayings!",
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:", value="!quote <quoter> <quote>\nIt gives you glory.")
         embed.set_footer(text="Always remember...")
         await ctx.send(embed=embed)
 
+    elif command.lower() == 'rps':
+        embed = discord.Embed(title="Help RPS",
+                              description="You can either play:",
+                              colour=discord.colour.Colour.green(),
+                              inline=True)
+        embed.add_field(name="Single player:", value="Use !rps <rock/paper/scissor> to play against me, or")
+        embed.add_field(name="Multi player:", value="Use !rps <useryouwanttodefeat> to play against them.")
+        embed.set_footer(text="Its a great game!")
+        await ctx.send(embed=embed)
 
-token = open('text_files/tokeniguess.txt', 'r')
-my_token = token.read()
-bot.run(my_token)
+    elif command.lower() == 'oddeve':
+        embed = discord.Embed(title="Help OddEve",
+                              description="You can either play:",
+                              colour=discord.colour.Colour.green(),
+                              inline=True)
+        embed.add_field(name="Single player:", value="Use !oddeve <odd/even> to play against me, or")
+        embed.add_field(name="Multi player:", value="Use !oddeve <useryouwanttodefeat> to play against them.")
+        embed.set_footer(text="Its a great game!")
+        await ctx.send(embed=embed)
+
+# Starts the bot
+
+
+keep_alive()  # Starts a webserver to be pinged.
+token = os.environ.get("DISCORD_BOT_SECRET")
+bot.run(token)  # Starts the bot
