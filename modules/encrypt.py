@@ -1,18 +1,12 @@
 import random
 import os
 
-alphabet1 = open('text_files/alphabet.txt', 'r')
-alphabet = alphabet1.read()
-mykey = open('text_files/key.txt', 'r')
-key = mykey.read()
+key = os.environ['key']
+alphabet = os.environ['alphabet']
 
 
 
 def encrypt_text(plaintext):
-    check_j = False
-    if plaintext[0] == 'j':
-        check_j = True
-
     def makeKey(alphabet):  # needed only while making new key
         alphabet = list(alphabet)
         random.shuffle(alphabet)
@@ -47,8 +41,5 @@ def encrypt_text(plaintext):
 
     encrypt3 = (''.join(f"{x}{random.choice(lst) if random.randint(0, 4) else ''}" for x in string))
     encrypt4 = encrypt3[::-1]
-    if check_j is True:
-        final_encrypted_text = encrypt4 + " |"
-    else:
-        final_encrypted_text = encrypt4
+    final_encrypted_text = encrypt4
     return final_encrypted_text

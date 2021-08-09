@@ -1,15 +1,10 @@
 import random
 import os
 
-alphabet1 = open('text_files/alphabet.txt', 'r')
-alphabet = alphabet1.read()
-mykey = open('text_files/key.txt', 'r')
-key = mykey.read()
-
+key = os.environ['key']
+alphabet = os.environ['alphabet']
 
 def decrypt_text(encrypted_text):
-
-
     def key_subs_decode(encrypted_text, key, alphabet):
         keyMap = dict(zip(key, alphabet))
         return ''.join(keyMap.get(c, c) for c in encrypted_text)

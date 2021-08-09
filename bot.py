@@ -29,8 +29,9 @@ from discord.ext.commands import cooldown, BucketType
 intents = discord.Intents().all()
 from discord_components import *
 from discord_components import DiscordComponents, Button, ButtonStyle, Select, SelectOption
-
-
+import aiohttp
+import giphy_client
+from giphy_client.rest import ApiException
 async def determine_prefix(bot, message):
     if message.guild:
         db = TinyDB('databases/prefix.json')
@@ -114,11 +115,14 @@ async def on_member_join(member):
     db = TinyDB("databases/people_who_know.json")
     pos = sum(m.joined_at < member.joined_at for m in member.guild.members if m.joined_at is not None)
     embed = discord.Embed(
-        description=f"Welcome {member.mention} to **{member.guild.name}**\nYou are the {pos}th member in the server.",
+        description=f"Welcome {member.name} to **{member.guild.name}**\nYou are the {pos}th member in the server.",
         color=0xe74c3c)
     embed.set_thumbnail(url=member.avatar_url)
     if not member.bot:
-        await member.send(f'Welcome to {member.guild.name}')
+        try:
+          await member.send(f'Welcome to {member.guild.name}')
+        except:
+          pass
         if str(member.id) not in str(db):
             db.insert({'name': member.id})
         if not channel:
@@ -165,11 +169,20 @@ async def on_guild_join(guild):
     db = TinyDB('databases/people_who_know.json')
     db1 = TinyDB('databases/lockdown.json')
     db1.insert({'guild': guild.id, 'unaffected_channels': [], 'state': False})
-    print(str(db.all()))
+    count=0
     for x in guild.members:
-        if not x.bot and str(x.name) not in str(db.all()):
-            db.insert({'name': x.name})
-    
+        if not x.bot and str(x.id) not in str(db.all()):
+            db.insert({'name': x.id})
+        count += 1
+    embed = discord.Embed(title="Guild join", description=guild.name, color=0x00FF00)
+    placehold = 'We do be popular boi'
+    embed.add_field(name=f"Members", value=count)
+    embed.add_field(name=f"Owner", value=guild.owner)
+    a = bot.get_guild(869173101131337748)
+    channel = a.get_channel(869447409237897256)
+    embed.set_footer(text=f"Chad is currently in {len(bot.guilds)} servers")
+    await channel.send(embed=embed)
+
 
 @bot.event
 async def on_member_join(member):
@@ -209,7 +222,12 @@ async def on_guild_remove(guild):
     count = 0
     for x in guild.members:
         count += 1
-
+  
+    embed.add_field(name=f"Members", value=count)
+    embed.add_field(name=f"Owner", value=guild.owner)
+    a = bot.get_guild(869173101131337748)
+    channel = a.get_channel(869447409237897256)
+    await channel.send(embed=embed)
 
 @bot.event
 async def on_message_delete(message):
@@ -263,7 +281,7 @@ async def prefix(ctx, *, prefix=None):
         embed = discord.Embed(title="Hold up",
                               description="You can't do that, your not an admin!",
                               color=discord.Color.red())
-
+        await ctx.send(embed=embed)
 
 @bot.command()
 async def ping(ctx):
@@ -277,11 +295,31 @@ async def ping(ctx):
 async def invite(ctx):
     embed = discord.Embed(
         title="Invite",
-        description=f"To invite me to your own server [click here](https://discord.com/api/oauth2/authorize?client_id=864010316424806451&permissions=3694651478&scope=applications.commands%20bot).")
+        description=f"To invite me to your own server [click here](https://discord.com/api/oauth2/authorize?client_id=864010316424806451&permissions=4227997759&scope=applications.commands%20bot)")
+    
     embed.set_footer(text="Information requested by: {}".format(ctx.author.display_name))
     embed.set_thumbnail(url=ctx.author.avatar_url)
     embed.color = discord.Colour.green()
     await ctx.send(embed=embed)
+
+
+@bot.command()
+async def robmoji(ctx, emoji: discord.PartialEmoji, *, Name=None):
+  if ctx.author.guild_permissions.manage_emojis:
+    emoji_url=emoji.url
+    if Name is None:
+      Name=emoji.name
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(str(emoji_url)) as response:
+            img = await response.read()
+    new_emoji=await ctx.guild.create_custom_emoji(name=Name, image=img)
+    embed=discord.Embed(title="Emoji Added Pog!",description=f"Name is:\"{Name}\", your emoji is {new_emoji}",color=discord.Color.random())
+    await ctx.send(embed=embed)
+  else:
+    await ctx.send(
+            embed=discord.Embed(title="Stop right there!", description="You require to have manage emojis permission!",
+                                color=discord.Color.red()))
 
 
 @bot.command()
@@ -335,11 +373,11 @@ format = "%a, %d %b %Y | %H:%M:%S %ZGMT"
 @bot.command()
 async def about(ctx):
     about_embed = discord.Embed(title="About ME!", color=discord.Color.green())
-    about_embed.add_field(name="Bot Developed by:", value="ZeroAndOne, [My epic devs!](https://zeroandone.ml)")
-    about_embed.add_field(name="Created to:", value="Make discord a better place. :angel:")
-    about_embed.add_field(name="Features:", value="Use !help", inline=True)
-    about_embed.add_field(name="Give me feedback and complains here. Help me improve myself!",
-                          value="[Support Server](https://discord.gg/9emrvg3s3Y)", inline=True)
+    about_embed.add_field(name="Bot Developed by:", value=f"ZeroAndOne, [My epic devs!](https://zeroandone.ml)")
+    about_embed.add_field(name="Created to:", value=f"Make discord a better place. :angel:")
+    about_embed.add_field(name="Features:", value=f"Use !help", inline=True)
+    about_embed.add_field(name="Give me feedback and complains here. Help me improve myself!\nAlso useful for finding out about the latest Chad updates!!",
+                          value=f"[Support Server](https://discord.gg/5ABvVwKGCF)", inline=True)
     user = bot.get_user(864010316424806451)
     about_embed.set_thumbnail(url=ctx.author.avatar_url)
     await ctx.send(embed=about_embed)
@@ -409,7 +447,7 @@ async def makerole(ctx, *, rolename):
         embed1 = discord.Embed(title="Role Created!",
                                description=f"Added role {role.mention} to the server!",
                                color=color)
-        embed1.set_footer(text="Tip: Do !addrole to add your newly created role to users!")
+        embed1.set_footer(text=f"Tip: Do {ctx.prefix}addrole to add your newly created role to users!")
         await ctx.send(embed=embed1)
 
     else:
@@ -544,6 +582,7 @@ async def snipe(ctx):
 @bot.command()
 async def slowmode(ctx, seconds: int):
     if ctx.author.guild_permissions.administrator:
+        
         if seconds <= 21600:
             await ctx.channel.edit(slowmode_delay=seconds)
             embed = discord.Embed(
@@ -561,7 +600,7 @@ async def slowmode(ctx, seconds: int):
         await ctx.send(
             embed=discord.Embed(title="Stop right there!", description="You require the Administrators permission.",
                                 color=discord.Color.green()))
-
+    
 
 @bot.command()
 async def blacklist(ctx, member: discord.Member):
@@ -650,7 +689,7 @@ async def unblacklist(ctx, member: discord.Member):
 async def clear(ctx, times: int, hide=None):
     if ctx.author.guild_permissions.manage_messages:
         if hide is None:
-            await ctx.channel.purge(limit=times)
+            await ctx.channel.purge(limit=times + 1)
             await ctx.send(embed=discord.Embed(title=f"{times} messages deleted"))
         elif hide == 'hide':
             await ctx.channel.purge(limit=times + 1)
@@ -674,15 +713,18 @@ async def warn(ctx, member: discord.Member, *, reason: str):
                 await ctx.send(embed=discord.Embed(title="ALERT! ALERT! :dizzy_face:",
                                                    description="Warning fellow admins is a no-no, kids!",
                                                    color=discord.Color.random()))
+                return
             elif not reason:
                 await ctx.send(embed=dsicrod.Embed(title="Please provide a reason",
                                                    color=discord.Color.random()))
                 return
+
             elif len(reason) > 150:
                 await ctx.send(
                     embed=discord.Embed(title=f"The reason for warning cannot be more then 150 characters long!",
                                         description=f"You are {len(reason) - 150} characters over the limit!",
                                         color=discord.Color.random()))
+                return
             else:
                 await ctx.send(embed=discord.Embed(title=f"{member.display_name} has been warned", description=reason,
                                                    color=discord.Color.random()))
@@ -740,34 +782,28 @@ async def lockdown(ctx, state):
                 embed.color = discord.Color.red()
                 await ctx.send(embed=embed)
                 for channel in guild.text_channels:
-                    perms = ctx.channel.overwrites_for(ctx.guild.default_role)
+                    perms = channel.overwrites_for(ctx.guild.default_role)
                     if perms.send_messages is False or perms.view_channel is False:
                         unaffected_channels.append(channel.id)
-                        continue
-                    await channel.set_permissions(everyone, send_messages=False)
+                    else:
+                        await channel.set_permissions(everyone, send_messages=False)
 
                 for channel in guild.voice_channels:
-                    perms = ctx.channel.overwrites_for(ctx.guild.default_role)
-                    if perms.send_messages is False or perms.view_channel is False:
+                    perms = channel.overwrites_for(ctx.guild.default_role)
+                    if perms.speak is False or perms.view_channel is False:
                         unaffected_channels.append(channel.id)
-                        continue
-                    await channel.set_permissions(everyone, speak=False)
+                    else:
+                        await channel.set_permissions(everyone, speak=False)
                 db.update({'unaffected_channels': unaffected_channels}, query.guild == ctx.guild.id)
                 db.update({'state': True}, query.guild == ctx.guild.id)
             else:
-                await ctx.send(embed=discord.Embed(title="This channel is ALREADY under lockdown",
-                                                   description="You can be arrested by law if you place a lockdown TWICE.",
-                                                   color=discord.Color.random()))
+                await ctx.send(embed = discord.Embed(title="This channel is ALREADY under lockdown",
+                                                     description="You can be arrested by law if you place a lockdown TWICE.",
+                                                     color=discord.Color.random()))
 
         elif state.lower() == 'false':
             if db.search(query.guild == ctx.guild.id)[0]['state'] is True:
-                print(db.search(query.guild == ctx.guild.id)[0]['unaffected_channels'])
                 unaffected_channels = db.search(query.guild == ctx.guild.id)[0]['unaffected_channels']
-                embed = discord.Embed(
-                    title="Lockdown has been lifted.... Enjoy Suckas <a:ZOPepeRave:865560322966421514>")
-                embed.set_footer(text="Corona go poof ")
-                embed.color = discord.Color.green()
-                await ctx.send(embed=embed)
                 for channel in guild.text_channels:
                     if channel.id in unaffected_channels:
                         print(channel)
@@ -779,22 +815,24 @@ async def lockdown(ctx, state):
                     else:
                         await channel.set_permissions(everyone, speak=None)
                 db.update({'state': False}, query.guild == ctx.guild.id)
+                embed = discord.Embed(title="Lockdown has been lifted.... Enjoy Suckas <a:ZOPepeRave:865560322966421514>")
+                embed.set_footer(text="Corona go poof ")
+                embed.color = discord.Color.green()
+                await ctx.send(embed=embed)
 
             else:
-                await ctx.send(embed=discord.Embed(title="This channel is ALREADY free",
-                                                   description="Don't give too much freedom. It will lead to chaos.",
-                                                   color=discord.Color.random()))
+                await ctx.send(embed = discord.Embed(title="This channel is ALREADY free",
+                                                     description="Don't give too much freedom. It will lead to chaos.",
+                                                     color=discord.Color.random()))
 
         else:
-            embed = discord.Embed(title="Please give a valid state, True or false",
-                                  description="Try `!lockdown true` or `!lockdown false`",
+            embed = discord.Embed(title=f"Please give a valid state, True or false", description="Try `{ctx.prefix}lockdown true` or `{ctx.prefix}lockdown false`",
                                   color=discord.Color.random())
             await ctx.send(embed=embed)
     else:
         await ctx.send(
-            embed=discord.Embed(title="Stop right there!", description="You require the Administrator permission.",
+            embed=discord.Embed(title="Stop right there!", description="You require the Manage roles permission. :expressionless:\nJk lol U need admin perms.",
                                 color=discord.Color.red()))
-
 
 @bot.command()
 async def unmute(ctx, member: discord.Member):
@@ -802,9 +840,17 @@ async def unmute(ctx, member: discord.Member):
         guild = ctx.guild
         mutedRole = discord.utils.get(guild.roles, name="Is Muted")
         await member.remove_roles(mutedRole)
-        embed = discord.Embed(title=f"{member.display_name} has now been unmuted!!", color=discord.Color.blurple())
-        embed.set_footer(text="Rejoice son, don't make this mistake again")
-        await ctx.send(embed=embed)
+        guild = ctx.guild
+        if mutedRole in member.roles:
+            embed = discord.Embed(title=f"{member.display_name} has now been unmuted!!", color=discord.Color.blurple())
+            embed.set_footer(text="Rejoice son, don't make this mistake again")
+            await ctx.send(embed=embed)
+        else:
+            embed=discord.Embed(title="This user isn't even muted.", description="Forgiveness maybe a good thing.\nBut you're still WASTING MY TIME.", color=discord.Color.random())
+            embed.set_footer(text="If only the world had a bit of common sense...")
+            await ctx.send(embed=embed)
+            return
+      
     else:
         await ctx.send(
             embed=discord.Embed(title="Stop right there!", description="You require to be an admin!",
@@ -821,9 +867,15 @@ async def tempmute(ctx, duration: TimeConverter, member: discord.Member, *, reas
                                   description=f"Did you really just try to mute yourself? :person_facepalming:",
                                   color=discord.Color.random())
             embed.set_footer(text="Sometimes I just wonder...")
-
             await ctx.send(embed=embed)
             return
+
+        if mutedRole in member.roles:
+          embed=discord.Embed(title="Already muted idiot", description="How many times do you wish to mute this dude?", color=discord.Color.random())
+          embed.set_footer(text="I feel sorry for my bro")
+          await ctx.send(embed=embed)
+          return
+
 
         if member.guild_permissions.administrator:
             embed = discord.Embed(title="Nuh uh not happening",
@@ -842,8 +894,11 @@ async def tempmute(ctx, duration: TimeConverter, member: discord.Member, *, reas
             mutedRole = discord.utils.get(guild.roles, name=" Is Muted")
 
         message = f"You have been muted in {ctx.guild.name} for {reason}"
+        try:
+          await member.send(message)
 
-        await member.send(message)
+        except:
+          print("Could not DM him")
         await member.add_roles(mutedRole, reason=reason)
         embed = discord.Embed(title=f"{member.display_name} has now been muted for {duration}s.!!",
                               color=discord.Color.blurple())
@@ -853,7 +908,11 @@ async def tempmute(ctx, duration: TimeConverter, member: discord.Member, *, reas
         await asyncio.sleep(duration)
         message2 = f"You have been unmuted in {ctx.guild.name}."
         await member.remove_roles(mutedRole)
-        await member.send(message2)
+        try:
+          await member.send(message2)
+
+        except:
+          print("Could not DM him")
 
         embed = discord.Embed(title=f"{member.display_name} has now been unmuted!!", color=discord.Color.blurple())
         embed.set_footer(text="Rejoice son, don't make this mistake again")
@@ -876,7 +935,6 @@ async def mute(ctx, member: discord.Member, *, reason="No reason given"):
                                   description=f"Did you really just try to mute yourself? :person_facepalming:",
                                   color=discord.Color.random())
             embed.set_footer(text="Sometimes I just wonder...")
-
             await ctx.send(embed=embed)
             return
 
@@ -889,6 +947,12 @@ async def mute(ctx, member: discord.Member, *, reason="No reason given"):
 
         guild = ctx.guild
         mutedRole = discord.utils.get(guild.roles, name="Is Muted")
+        if mutedRole in member.roles:
+          embed=discord.Embed(title="Already muted idiot", description="How many times do you wish to mute this dude?", color=discord.Color.random())
+          embed.set_footer(text="I feel sorry for my bro")
+          await ctx.send(embed=embed)
+          return
+
 
         if mutedRole is None:
             perms = discord.Permissions(speak=False, send_messages=False, read_message_history=True, read_messages=True)
@@ -896,15 +960,17 @@ async def mute(ctx, member: discord.Member, *, reason="No reason given"):
             mutedRole = discord.utils.get(guild.roles, name=" Is Muted")
 
         embed = discord.Embed(title="Muted", description=f"{member.mention} was muted.",
-                              colour=discord.Colour.light_gray())
+                              colour=discord.Colour.random())
         embed.add_field(name="reason:", value=reason, inline=True)
         await ctx.send(embed=embed)
         await member.add_roles(mutedRole, reason=reason)
         for channel in guild.channels:
             await channel.set_permissions(mutedRole, send_messages=False,
                                           speak=False)
-        await member.send(f" You have been muted in: {guild.name} reason: {reason}")
-
+        try:
+          await member.send(f" You have been muted in: {guild.name} reason: {reason}")
+        except:
+          print("Oops Could not dm user")
     else:
         await ctx.send(
             embed=discord.Embed(title="Stop right there!", description="You require to be an admin!",
@@ -930,7 +996,11 @@ async def kick(ctx, member: discord.Member):
             await ctx.send(embed=embed)
             return
         message = f"You have been kicked from {ctx.guild.name}"
-        await member.send(message)
+        try:
+          await member.send(message)
+
+        except:
+          print("Could not DM him")
         await ctx.guild.kick(member)
         await ctx.channel.send(embed=discord.Embed(title=f"{member} is kicked!"), color=discord.Color.random())
 
@@ -994,7 +1064,11 @@ async def tempban(ctx, duration: TimeConverter, member: discord.Member, *, reaso
                 color=discord.Color.random()
             )
             embed.set_image(url=random.choice(banned_gifs))
-            await member.send(embed=embed)
+            try:
+              await member.send(embed=embed)
+            except:
+              print("Could not DM him")
+            
             await ctx.guild.ban(member)
             embed1 = discord.Embed(
                 title=f"{member.display_name} has been banned for {reason}",
@@ -1045,7 +1119,11 @@ async def ban(ctx, member: discord.Member, *, reason=None):
         if reason is None:
             reason = "No reason specified"
         message = discord.Embed(title=f"You have been banned from {ctx.guild.name} for {reason}", color=discord.Color.random())
-        await member.send(embed=message)
+        try:
+          await member.send(embed=message)
+
+        except:
+          print("Could not DM him")
         await ctx.guild.ban(member)
         await ctx.channel.send(f"{member} is banned!")
         embed1 = discord.Embed(
@@ -1129,7 +1207,7 @@ async def translate(ctx, *, keyword):
     if translate_to == "Undetected":
         embed = discord.Embed(title="Translate", description="This language is not supported by us.")
         embed.add_field(name="Possible Issues",
-                        value="1. You have typed an invalid language.\n2. We don't support this language (if this is the case, come to our support server)")
+                        value=f"1. You have typed an invalid language.\n2. We don't support this language (if this is the case, come to our support server)")
     else:
         embed = discord.Embed(title="Translate",
                               description=f"{translation.origin} ({translation.src}) --> {translation.text} ({translation.dest})")
@@ -1220,8 +1298,10 @@ async def ask(ctx, *, question):
         if x in message.split():
             bool = True
     if bool == False:
-        return await ctx.send("Invalid question format.")
+        return await ctx.send(embed=discord.Embed(title="Invalid question format.",color=discord.Color.random()))
 
+    question=await commands.clean_content().convert(ctx,question)
+    question=question.replace('@',"")
     embed = discord.Embed(title=question, description=
     random.choice([
         "It is certain :8ball:", "It is decidedly so :8ball:",
@@ -1236,6 +1316,28 @@ async def ask(ctx, *, question):
         "Very doubtful :8ball:"
     ]), color=discord.Color.blue())
     await ctx.send(embed=embed)
+
+
+@bot.command()
+async def gif(ctx, *, q="random"):
+
+    api_key = os.environ['giphy_api']
+    api_instance = giphy_client.DefaultApi()
+    try: 
+    # Search Endpoint
+        
+        api_response = api_instance.gifs_search_get(api_key, q, limit=5, rating='g')
+        lst = list(api_response.data)
+        giff = random.choice(lst)
+
+        emb = discord.Embed(title=q)
+        emb.set_image(url = f'https://media.giphy.com/media/{giff.id}/giphy.gif')
+
+        await ctx.channel.send(embed=emb)
+    except ApiException as e:
+        emb = discord.Embed(title=q,description="Sorry could not find anything matching that",color=discord.Color.random())
+        await(ctx.send(embed=emb))
+
 
 @commands.cooldown(1, 30, commands.BucketType.guild)
 @bot.command()
@@ -1362,14 +1464,6 @@ async def poll(ctx, duration: TimeConverter, *, argument: str):
         # Get votes
         reaction = None
 
-        #this dms ppl
-        for member in ctx.guild.members:
-            if not member.bot:
-                await member.send(embed=discord.Embed(title=f"There is a new poll in {ctx.guild.name}.",
-                                                      description="Please check it out; it may be important!",
-                                                      color=discord.Color.random()))
-
-        # Ensure reaction is to the poll message and the reactor is not the bot
         def check(reaction, user):
             return reaction.message.id == message.id and user.id != 861828663958831185
 
@@ -1423,9 +1517,25 @@ async def ascii(ctx, *, txt: str):
 
 
 @bot.command()
+async def act(ctx, member: discord.Member, *, message=None):
+        
+        if message == None:
+                await ctx.send(embed=discord.Embed(title= f'Please provide a message with that!',color=discord.Color.random()))
+                return
+
+        await ctx.message.delete()
+        webhook = await ctx.channel.create_webhook(name=member.name)
+        await webhook.send(
+            message, username=member.display_name, avatar_url=member.avatar_url)
+        webhooks = await ctx.channel.webhooks()
+        for webhook in webhooks:
+                 await webhook.delete()
+
+
+@bot.command()
 async def encrypt(ctx, *, text_to_encrypt: str):
     valid_reactions = ['<:trash:867001275634417714>']
-    embed = discord.Embed(title="Encoding your message... :disguised face:",
+    embed = discord.Embed(title="Encoding your message <a:zo_typing:873129455483256832>",
                           description="This stays in between us. :wink:\n Keep this a secret. :zipper_mouth:")
     embed.color = discord.Color.dark_blue()
     embed.set_footer(text="You all saw NOTHING")
@@ -1444,7 +1554,7 @@ async def encrypt(ctx, *, text_to_encrypt: str):
 
 @bot.command()
 async def decrypt(ctx, *, text_to_decrypt: str):
-    embed = discord.Embed(title="Decoding your message... :thinking_face:",
+    embed = discord.Embed(title="Decoding your message <a:zo_typing:873129455483256832>",
                           description="This is your message. :face_with_monocle:\n Hope you have what you need. :slight_smile:")
     embed.color = discord.Color.dark_blue()
 
@@ -1739,7 +1849,7 @@ async def imagememes(ctx):
     embed = discord.Embed(title="Image Memes List",
                           description="Here is the list of POG image memes you can use.",
                           inline=False)
-    embed.add_field(name="List", value="1. !worthless\n2. !wanted\n3. !rip\n4. !chad")
+    embed.add_field(name="List", value=f"1. {ctx.prefix}worthless\n2. {ctx.prefix}wanted\n3. {ctx.prefix}rip\n4. {ctx.prefix}chad")
     await ctx.send(embed=embed)
 
 
@@ -2082,38 +2192,38 @@ async def vcmeme(ctx, *, meme: str):
 async def vcmeme_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         embed = discord.Embed(title="Here is the list of all VC MEMES", color=discord.Color.gold())
-        embed.add_field(name="1", value="20th Century", inline=False)
-        embed.add_field(name="2", value="AirHorn", inline=False)
-        embed.add_field(name="3", value="Big pew pew", inline=False)
-        embed.add_field(name="4", value="Bye", inline=False)
-        embed.add_field(name="5", value="CENSOR BEEP", inline=False)
-        embed.add_field(name="6", value="DENIED", inline=False)
-        embed.add_field(name="7", value="DRUM ROLL", inline=False)
-        embed.add_field(name="8", value="DUN DUN DUN", inline=False)
-        embed.add_field(name="9", value="Elevator Music", inline=False)
-        embed.add_field(name="10", value="EXPLOSION", inline=False)
-        embed.add_field(name="11", value="Headshot", inline=False)
-        embed.add_field(name="12", value="HIDDEN AGENDA", inline=False)
-        embed.add_field(name="13", value="Huh", inline=False)
-        embed.add_field(name="14", value="Illuminati Confirmed", inline=False)
-        embed.add_field(name="15", value="INVESTIGATIONS", inline=False)
-        embed.add_field(name="16", value="OH HELLO THERE", inline=False)
-        embed.add_field(name="17", value="Oof", inline=False)
-        embed.add_field(name="18", value="pew", inline=False)
-        embed.add_field(name="19", value="REEEEE", inline=False)
-        embed.add_field(name="20", value="pew pew", inline=False)
-        embed.add_field(name="21", value="SAD MUSIC", inline=False)
-        embed.add_field(name="22", value="SAY WHAT", inline=False)
-        embed.add_field(name="23", value="SNEAKY SNITCH", inline=False)
-        embed.add_field(name="24", value="STOP RIGHT THERE", inline=False)
-        embed.add_field(name="25", value="Surprise Mf", inline=False)
+        embed.add_field(name="1", value=f"20th Century", inline=False)
+        embed.add_field(name="2", value=f"AirHorn", inline=False)
+        embed.add_field(name="3", value=f"Big pew pew", inline=False)
+        embed.add_field(name="4", value=f"Bye", inline=False)
+        embed.add_field(name="5", value=f"CENSOR BEEP", inline=False)
+        embed.add_field(name="6", value=f"DENIED", inline=False)
+        embed.add_field(name="7", value=f"DRUM ROLL", inline=False)
+        embed.add_field(name="8", value=f"DUN DUN DUN", inline=False)
+        embed.add_field(name="9", value=f"Elevator Music", inline=False)
+        embed.add_field(name="10", value=f"EXPLOSION", inline=False)
+        embed.add_field(name="11", value=f"Headshot", inline=False)
+        embed.add_field(name="12", value=f"HIDDEN AGENDA", inline=False)
+        embed.add_field(name="13", value=f"Huh", inline=False)
+        embed.add_field(name="14", value=f"Illuminati Confirmed", inline=False)
+        embed.add_field(name="15", value=f"INVESTIGATIONS", inline=False)
+        embed.add_field(name="16", value=f"OH HELLO THERE", inline=False)
+        embed.add_field(name="17", value=f"Oof", inline=False)
+        embed.add_field(name="18", value=f"pew", inline=False)
+        embed.add_field(name="19", value=f"REEEEE", inline=False)
+        embed.add_field(name="20", value=f"pew pew", inline=False)
+        embed.add_field(name="21", value=f"SAD MUSIC", inline=False)
+        embed.add_field(name="22", value=f"SAY WHAT", inline=False)
+        embed.add_field(name="23", value=f"SNEAKY SNITCH", inline=False)
+        embed.add_field(name="24", value=f"STOP RIGHT THERE", inline=False)
+        embed.add_field(name="25", value=f"Surprise Mf", inline=False)
         embed2 = discord.Embed(title="Here is the list of all VC MEMES(continued)", color=discord.Color.gold())
-        embed2.add_field(name="26", value="Why are you running", inline=False)
-        embed2.add_field(name="27", value="Why you bully me", inline=False)
-        embed2.add_field(name="28", value="WOW", inline=False)
-        embed2.add_field(name="29", value="YAY", inline=False)
-        embed2.add_field(name="30", value="YEET", inline=False)
-        embed2.add_field(name="31", value="You got it dude", inline=False)
+        embed2.add_field(name="26", value=f"Why are you running", inline=False)
+        embed2.add_field(name="27", value=f"Why you bully me", inline=False)
+        embed2.add_field(name="28", value=f"WOW", inline=False)
+        embed2.add_field(name="29", value=f"YAY", inline=False)
+        embed2.add_field(name="30", value=f"YEET", inline=False)
+        embed2.add_field(name="31", value=f"You got it dude", inline=False)
         embed2.set_footer(text="Don't worry this is not case sensitive")
         await ctx.send(embed=embed)
         await ctx.send(embed=embed2)
@@ -2349,7 +2459,7 @@ async def oddeve(ctx, *, msg=None):
         else:
             embed = discord.Embed(
                 title="What the hell bruh",
-                description=f"You have managed to put an invalid option in odds n evens.\nIts either odd or even :rolling_eyes:",
+                description=f"You have managed to put an invalid option in odd n even.\nIts either odd or even :rolling_eyes:",
                 color=discord.Color.random()
             )
             embed.color = 0x000fff
@@ -2414,7 +2524,7 @@ async def oddeve(ctx, *, msg=None):
 
         embed3 = discord.Embed(
             title=f"Hey {ctx.author.display_name}, as you have started the match, you get to choose....",
-            description="Choose whether you want \"Odd\" or \"even\"", color=discord.Color.random())
+            description="Choose whether you want \"odd\" or \"even\"", color=discord.Color.random())
         await ctx.send(embed=embed3)
         try:
             reply3 = await bot.wait_for('message', check=check3, timeout=60)
@@ -2445,11 +2555,13 @@ async def oddeve(ctx, *, msg=None):
             return
 
         embed1 = discord.Embed(title=f"Hello!! So you have challenged {msg.name} to an epic odds and evens battle!",
-                               description=f"Enter your number from 0 to 9 here\n And remember, you are {challenger}")
+                               description=f"Enter your number from 0 to 9 here\n And remember, you are {challenger}",
+                               color=discord.Color.random())
 
         embed2 = discord.Embed(
             title=f"Hello!! So you have been challenged by {ctx.author.name} to an odds and evens battle!!",
-            description=f"Enter your number from 0 to 9 here(if you wanna play)\n And remember, you are {player}")
+            description=f"Enter your number from 0 to 9 here(if you wanna play)\n And remember, you are {player}",
+            color=discord.Color.random())
         embed2.set_footer(text="Otherwise just ignore me like everyone else (SOB SOB)")
         await ctx.send("<a:ZO_DMS:871341236236193792>")
         await ctx.author.send(embed=embed1)
@@ -2528,7 +2640,7 @@ async def select(ctx):
         components=[
 
             Select(placeholder="select something!",
-                   options=[SelectOption(label="a", value="A"), SelectOption(label="b", value="B")])
+                   options=[SelectOption(label="a", value=f"A"), SelectOption(label="b", value=f"B")])
 
         ]
 
@@ -2542,6 +2654,12 @@ async def select(ctx):
 @slowmode.error
 async def slowmode_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
+
+        if ctx.channel.slowmode_delay==0:
+          await ctx.send("Slowmode disabled already dumbass")
+          return
+
+
         if ctx.author.guild_permissions.administrator:
             await ctx.channel.edit(slowmode_delay=0)
             await ctx.send(embed=discord.Embed(title="Slowmode disabled!", color=discord.Color.dark_magenta(),
@@ -2555,7 +2673,7 @@ async def slowmode_error(ctx, error):
     if isinstance(error, commands.BadArgument):
         await ctx.send(
             embed=discord.Embed(title="How hard is it to set a slowmode :rolling_eyes: ", color=discord.Color.magenta(),
-                                description="Do !slowmode to disable it and !slowmode 10 to set slowmode of 10 secs"))
+                                description=f"Do {ctx.prefix}slowmode to disable it and {ctx.prefix}slowmode 10 to set slowmode of 10 secs"))
 
 
 @hack.error
@@ -2569,6 +2687,31 @@ async def hack_error(ctx, error, ):
     elif isinstance(error, commands.UserNotFound):
         await ctx.send(embed=discord.Embed(title="This is ridiculous",
                                            description=f"<:ZO_Bruh:866252668225585152> {member.mention} have the brain cells to mention the target smh.\n How are you unable to MENTION SOMEONE"))
+
+    else:
+        raise (error)
+
+
+@robmoji.error
+async def rob_moji_error(ctx, error):
+    member = ctx.author
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send(embed=discord.Embed(title="You're kidding right?",
+                                           description=f"{member.mention} please mention an emojito steal\n That way, I won't need to steal thin air!!",
+                                           color=discord.Color.random()))
+
+    elif isinstance(error, commands.errors.PartialEmojiConversionFailure):
+        error = getattr(error, "original", error)
+        the_error_arg = error.argument 
+        embed=discord.Embed(title="Whoops",
+                                           description=f"Could not convert {the_error_arg} to an emoji",color=discord.Color.random())
+        embed.set_footer(text="If this is not you being dumb and a genuine error in the code,let us know here (https://discord.gg/TeRyp9JWbg)")
+        await ctx.send(embed=embed)
+
+    elif isinstance(error, commands.errors.CommandInvokeError):
+        await ctx.send(embed=discord.Embed(title="You're kidding right?",
+                                           description=f"{member.mention} give it a name from 2 to 32 characters **ONLY**\nAnd NO SPACES PLS \n this is an emoji name not a train",
+                                           color=discord.Color.random()))
 
     else:
         raise (error)
@@ -2630,7 +2773,7 @@ async def add_role_error(ctx, error):
 
     elif isinstance(error, commands.RoleNotFound):
         embed = discord.Embed(title="I didn't find this role.",
-                              description="Apparently this role doesn't even EXIST in your server.\nTry making the role with !makerole first.",
+                              description=f"Apparently this role doesn't even EXIST in your server.\nTry making the role with {ctx.prefix}makerole first.",
                               color=discord.Color.random())
         embed.set_footer(text="That would be great")
         await ctx.send(embed=embed)
@@ -2906,11 +3049,17 @@ async def lockdown_error(ctx, error):
     member = ctx.author
     if isinstance(error, commands.MissingRequiredArgument):
         embed = discord.Embed(title=f"Ah sad",
-                              description=f"U need to use either !lockdown true or !lockdown false",
+                              description=f"U need to use either {ctx.prefix}lockdown true or {ctx.prefix}lockdown false",
                               color=discord.Color.random())
         embed.set_footer(text="That's how that works")
         await ctx.send(embed=embed)
 
+    elif isinstance(error, commands.error.CommandsInvokeError):
+      embed = discord.Embed(title=f"I need more PERMS",
+                              description=f"I need to be able to manage the server.\nNow use your comman sense and give me the perm necessary.",
+                              color=discord.Color.random())
+      embed.set_footer(text="Hopefully you have some")
+      await ctx.send(embed=embed)
 
     else:
         raise (error)
@@ -3009,6 +3158,18 @@ async def tempmute_error(ctx, error):
                               color=discord.Color.random())
         embed.set_footer(text="But seriously, stop")
         await ctx.send(embed=embed)
+
+    elif isinstance(error, commands.errors.CommandInvokeError):
+        embed = discord.Embed(title=f"Nope, the member is more powerful than me",
+
+                              description=f"Maybe put my role above him :pleading_face:",
+
+                              color=discord.Color.random())
+
+        embed.set_footer(text="I feel weak")
+
+        await ctx.send(embed=embed)
+
 
     else:
         raise (error)
@@ -3124,10 +3285,20 @@ async def translate_error(ctx, error):
     member = ctx.author
     if isinstance(error, commands.MissingRequiredArgument):
         embed = discord.Embed(title=f"Why is this difficult",
-                              description=f"All you gotta do, is use !help translate and do what it says.",
+                              description=f"All you gotta do, is use {ctx.prefix}help translate and do what it says.",
                               color=discord.Color.random())
         embed.set_footer(text="Why you being like this")
         await ctx.send(embed=embed)
+
+
+    elif isinstance(error,commands.errors.CommandInvokeError):
+        embed = discord.Embed(title=f"Well that didn't work.....",
+                              description=f"Probably u put in some invalid shit",
+                              color=discord.Color.random())
+        embed.set_footer(text="Failed! Just like your life")
+        await ctx.send(embed=embed)
+
+
     else:
         raise (error)
 
@@ -3137,7 +3308,7 @@ async def urban_error(ctx, error):
     member = ctx.author
     if isinstance(error, commands.MissingRequiredArgument):
         embed = discord.Embed(title=f"I can't believe it.",
-                              description=f"BThis was the place where i really didn't expect an error. Use !Help urban for god's sake!",
+                              description=f"This was the place where i really didn't expect an error. Use {ctx.prefix}Help urban for god's sake!",
                               color=discord.Color.random())
         embed.set_footer(text="Wish you could use more brain power for this")
         await ctx.send(embed=embed)
@@ -3183,6 +3354,26 @@ async def ask_error(ctx, error):
                               color=discord.Color.random())
         embed.set_footer(text="Either I'm deaf, or you didn't even ask.")
         await ctx.send(embed=embed)
+
+    else:
+        raise (error)
+
+@gif.error
+async def gif_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        embed = discord.Embed(title=f"What were you searching gifs for again?",
+                              description=f"All I heard was ___",
+                              color=discord.Color.random())
+        embed.set_footer(text="Either I'm deaf, or you didn't even type anything to search.")
+        await ctx.send(embed=embed)
+    elif isinstance(error, commands.errors.CommandInvokeError):
+        embed = discord.Embed(title=f"Lmao sad life!",
+                              description=f"Didn't find anything",
+
+                              color=discord.Color.random())
+        embed.set_footer(text=f"sad puppy")
+        await ctx.send(embed=embed)
+
 
     else:
         raise (error)
@@ -3247,7 +3438,7 @@ async def poll_error(ctx, error):
     member = ctx.author
     if isinstance(error, commands.MissingRequiredArgument):
         embed = discord.Embed(title=f"Ah I fell you",
-                              description=f"This command is way too complex. Use !help poll",
+                              description=f"This command is way too complex. Use {ctx.prefix}help poll",
                               color=discord.Color.random())
         embed.set_footer(text="The one command where mistakes be understandable")
         await ctx.send(embed=embed)
@@ -3276,6 +3467,27 @@ async def ascii_error(ctx, error):
     else:
         raise (error)
 
+
+@act.error
+async def act_error(ctx, error):
+    member = ctx.author
+    if isinstance(error, commands.MissingRequiredArgument):
+        embed = discord.Embed(title=f"Bruh please give me all arguments for the command!",
+                              description=f"It is... `{ctx.prefix}act @person_you_wanna_enact stuff_u_want_it_to_say`",
+                              color=discord.Color.random())
+        embed.set_footer(text="smh smh SMH")
+        await ctx.send(embed=embed)
+
+
+    elif isinstance(error, commands.MemberNotFound):
+        embed = discord.Embed(title=f"BRUHH!",
+                              description=f"Mention a human to act",
+                              color=discord.Color.random())
+        embed.set_footer(text="Who am i supposed to mimic... Joe Ma--")
+        await ctx.send(embed=embed)
+
+    else:
+        raise (error)
 
 @binary.error
 async def binary_error(ctx, error):
@@ -3445,159 +3657,176 @@ async def help(ctx, command=None):
 
         help_embed_1 = discord.Embed(title="Utilities")
         help_embed_1.add_field(name="Ping",
-                               value="This allows you to check my ping.\n!help ping")
+                               value=f"This allows you to check my ping.\n{ctx.prefix}help ping")
         help_embed_1.add_field(name="MakeRole",
-                               value="Makes a new role in the server for you!\n!help makerole",
+                               value=f"Makes a new role in the server for you!\n{ctx.prefix}help makerole",
                                inline=False)
-        help_embed_1.add_field(name="AddRole", value="Gives the user a role!\n!help addrole",
+        help_embed_1.add_field(name="AddRole", value=f"Gives the user a role!\n{ctx.prefix}help addrole",
                                inline=False)
         help_embed_1.add_field(name="EditRole",
-                               value="Edits an existing role in the server.\n!help editrole",
+                               value=f"Edits an existing role in the server.\n{ctx.prefix}help editrole",
                                inline=False)
         help_embed_1.add_field(name="RemoveRole",
-                               value="Takes away a user's role.\n!help removerole",
+                               value=f"Takes away a user's role.\n{ctx.prefix}help removerole",
                                inline=False)
         help_embed_1.add_field(name="DeleteRole",
-                               value="Deletes a role in the server.\n!help deleterole",
+                               value=f"Deletes a role in the server.\n{ctx.prefix}help deleterole",
                                inline=False)
         help_embed_1.add_field(name="UserInfo",
-                               value="Gives the  information of the member specified...\n!help userinfo",
+                               value=f"Gives the  information of the member specified...\n{ctx.prefix}help userinfo",
                                inline=False)
+        help_embed_1.add_field(name="Robmoji",
+                               value=f"Robs an emoji! Basically takes an emoji from any server and uploads it here(in dis server) so everyone can use it!\n{ctx.prefix}help robmoji",
+                               inline=False)
+
         help_embed_1.add_field(name="ServerInfo",
-                               value="Provides the information about the server.\n!help serverinfo",
+                               value=f"Provides the information about the server.\n{ctx.prefix}help serverinfo",
                                inline=False)
         help_embed_1.add_field(name="Nick",
-                               value="Change nicknames in the server by using this feature.\n!help nick",
+                               value=f"Change nicknames in the server by using this feature.\n{ctx.prefix}help nick",
                                inline=False)
         help_embed_1.add_field(name="About",
-                               value="Tells you something more about ME!\n!help about",
+                               value=f"Tells you something more about ME!\n{ctx.prefix}help about",
                                inline=False)
         help_embed_1.add_field(name="Snipe",
-                               value="Allows You to restore the last deleted message of the channel.\n!help snipe",
+                               value=f"Allows You to restore the last deleted message of the channel.\n{ctx.prefix}help snipe",
                                inline=False)
         help_embed_1.add_field(name="Invite",
-                               value="Gives you the link to invite me to your servers!\n!help invite",
+                               value=f"Gives you the link to invite me to your servers!\n{ctx.prefix}help invite",
                                inline=False)
         help_embed_1.add_field(name="Support",
-                               value="Gives you my support server invite!\n!help support",
+                               value=f"Gives you my support server invite!\n{ctx.prefix}help support",
                                inline=False)
         help_embed_1.add_field(name="Website",
-                               value="Takes you to my devs' website!\n!help website",
+                               value=f"Takes you to my devs' website!\n{ctx.prefix}help website",
                                inline=False)
         help_embed_1.set_footer(text="Page 1")
         help_embed_1.color = discord.Color.random()
 
-        help_embed_2 = discord.Embed(title="Moderation")
-        help_embed_2.add_field(name="Slowmode",
-                               value="Allows moderators to enable/disable slowmode.\n!help slowmode",
+        help_embed_2 = discord.Embed(title="Moderation")          
+        help_embed_2.add_field(name="Prefix",
+                               value=f"Shows the prefix and allows you to change it!.\n{ctx.prefix}help prefix",
                                inline=False)
-        help_embed_2.add_field(name="Blacklist", value="Blacklists a user.\n!help blacklist",
+        help_embed_2.add_field(name="Slowmode",
+                               value=f"Allows moderators to enable/disable slowmode.\n{ctx.prefix}help slowmode",
+                               inline=False)
+        help_embed_2.add_field(name="Blacklist", value=f"Blacklists a user.\n{ctx.prefix}help blacklist",
                                inline=False)
         help_embed_2.add_field(name="Unblacklist",
-                               value="Unblacklists a user.\n!help unblacklist", inline=False)
-        help_embed_2.add_field(name="Clear", value="Clears messages in a channel.\n!help clear",
+                               value=f"Unblacklists a user.\n{ctx.prefix}help unblacklist", inline=False)
+        help_embed_2.add_field(name="Clear", value=f"Clears messages in a channel.\n{ctx.prefix}help clear",
                                inline=False)
         help_embed_2.add_field(name="Lockdown",
-                               value="Enforces lockdown in the server.\n!help lockdown",
+                               value=f"Enforces lockdown in the server.\n{ctx.prefix}help lockdown",
                                inline=False)
-        help_embed_2.add_field(name="Warn", value="Gives a warning to a user.\n!help warn",
+        help_embed_2.add_field(name="Warn", value=f"Gives a warning to a user.\n{ctx.prefix}help warn",
                                inline=False)
         help_embed_2.add_field(name="UserWarn",
-                               value="Displays the history of warnings given to a user.\n!help userwarn",
+                               value=f"Displays the history of warnings given to a user.\n{ctx.prefix}help userwarn",
                                inline=False)
+
         help_embed_2.add_field(name="Unmute",
-                               value="Allows user from typing in the server.\n!help unmute",
+                               value=f"Allows user from typing in the server.\n{ctx.prefix}help unmute",
                                inline=False)
+
+                      
         help_embed_2.add_field(name="Tempmute",
-                               value="Stop user from typing in the server TEMPORARILY.\n!help tempmute",
+                               value=f"Stop user from typing in the server TEMPORARILY.\n{ctx.prefix}help tempmute",
                                inline=False)
         help_embed_2.add_field(name="Mute",
-                               value="Stop user from typing in the server.\n!help mute",
+                               value=f"Stop user from typing in the server.\n{ctx.prefix}help mute",
                                inline=False)
-        help_embed_2.add_field(name="Kick", value="Kicks the specified user from the server.\n!help kick",
+        help_embed_2.add_field(name="Kick", value=f"Kicks the specified user from the server.\n{ctx.prefix}help kick",
                                inline=False)
-        help_embed_2.add_field(name="Unban", value="Unbans users, obviously.\n!help unban",
+        help_embed_2.add_field(name="Unban", value=f"Unbans users, obviously.\n{ctx.prefix}help unban",
                                inline=False)
-        help_embed_2.add_field(name="Tempban", value="Bans users, TEMPORARILY.\n!help tempban",
+        help_embed_2.add_field(name="Tempban", value=f"Bans users, TEMPORARILY.\n{ctx.prefix}help tempban",
                                inline=False)
-        help_embed_2.add_field(name="Ban", value="Bans users, like, DUH.\n!help ban",
+        help_embed_2.add_field(name="Ban", value=f"Bans users, like, DUH.\n{ctx.prefix}help ban",
                                inline=False)
         help_embed_2.set_footer(text="Page 2")
         help_embed_2.color = discord.Color.random()
         help_embed_3 = discord.Embed(title="Information")
         help_embed_3.add_field(name="Dictionary",
-                               value="Finds dictionary meanings, synonyms, antonyms and translations.\n!help dictionary",
+                               value=f"Finds dictionary meanings, synonyms and antonyms.\n{ctx.prefix}help dictionary",
                                inline=False)
         help_embed_3.add_field(name="Translate",
-                               value="Translates a word into any language needed.\n!help translate",
+                               value=f"Translates a word into any language needed.\n{ctx.prefix}help translate",
                                inline=False)
         help_embed_3.add_field(name="Weather",
-                               value="Gives you the current weather of a place.\n!help weather",
+                               value=f"Gives you the current weather of a place.\n{ctx.prefix}help weather",
                                inline=False)
         help_embed_3.add_field(name="Wiki",
-                               value="Searches up the Wikipedia for you.\n!help wiki",
+                               value=f"Searches up the Wikipedia for you.\n{ctx.prefix}help wiki",
                                inline=False)
         help_embed_3.add_field(name="UrbanDictionary",
-                               value="Allows you took access the Urban Dictionary.\n!help urban",
+                               value=f"Allows you to access the Urban Dictionary.\n{ctx.prefix}help urban",
                                inline=False)
         help_embed_3.set_footer(text="Page 3")
         help_embed_3.color = discord.Color.random()
         help_embed_4 = discord.Embed(title="Fun")
         help_embed_4.add_field(name="Ask",
-                               value="Honestly answers a question you may have.\n!help ask",
+                               value=f"Honestly answers a question you may have.\n{ctx.prefix}help ask",
                                inline=False)
-        help_embed_4.add_field(name="Repeat", value="Repeats your message.\n!help repeat",
+        help_embed_4.add_field(name="Repeat", value=f"Repeats your message.\n{ctx.prefix}help repeat",
                                inline=False)
-        help_embed_4.add_field(name="Dice", value="Roles a dice for you.\n!help dice",
+        help_embed_4.add_field(name="Dice", value=f"Roles a dice for you.\n{ctx.prefix}help dice",
                                inline=False)
         help_embed_4.add_field(name="EpicGamerRate",
-                               value="Tells you how EPIC you are at gaming.\n!help epicgamerrate",
+                               value=f"Tells you how EPIC you are at gaming.\n{ctx.prefix}help epicgamerrate",
                                inline=False)
         help_embed_4.add_field(name="SimpRate",
-                               value="Tells you how much you are simping.\n!help simprate",
+                               value=f"Tells you how much you are simping.\n{ctx.prefix}help simprate",
                                inline=False)
-        help_embed_4.add_field(name="Poll", value="Creates a poll for you.\n!help poll",
+        help_embed_4.add_field(name="Poll", value=f"Creates a poll for you.\n{ctx.prefix}help poll",
                                inline=False)
         help_embed_4.add_field(name="Script",
-                               value="Translates the Zero&One script.\n!help script",
+                               value=f"Translates the Zero&One script.\n{ctx.prefix}help script",
                                inline=False)
 
         help_embed_4.add_field(name="Binary",
-                               value="Converts string to binary as zeros and ones are cool\n!help binary",
+                               value=f"Converts string to binary as zeros and ones are cool\n{ctx.prefix}help binary",
                                inline=False)
         help_embed_4.add_field(name="ASCII",
-                               value="Creates a cool ASCII art for you.\n!help ascii",
+                               value=f"Creates a cool ASCII art for you.\n{ctx.prefix}help ascii",
+                               inline=False)
+        help_embed_4.add_field(name="Act",
+                               value=f"Makes me act as though I'm another user...\n{ctx.prefix}help act",
                                inline=False)
         help_embed_4.add_field(name="Chooser",
-                               value="Lets you choose between the given options.\n!help chooser",
+                               value=f"Lets you choose between the given options.\n{ctx.prefix}help chooser",
                                inline=False)
-        help_embed_4.add_field(name="Coinflip", value="Flips a coin for you.\n!help coinflip",
+        help_embed_4.add_field(name="Coinflip", value=f"Flips a coin for you.\n{ctx.prefix}help coinflip",
                                inline=False)
-        help_embed_4.add_field(name="Guess",
-                               value="Lets you guess a number within any range.\n!help guess",
+        help_embed_4.add_field(name="Hack", value=f"Hacks the required user.\n{ctx.prefix}help hack",
                                inline=False)
-        help_embed_4.add_field(name="Hack", value="Hacks the required user.\n!help hack",
+        help_embed_4.add_field(name="Gif",
+                               value=f"Allows to search for GIFs or send random.\n{ctx.prefix}help gif",
                                inline=False)
+
         help_embed_4.add_field(name="ImageMemes",
-                               value="Makes some very funny image memes for you.\n!help imagememes",
+                               value=f"Makes some very funny image memes for you.\n{ctx.prefix}help imagememes",
                                inline=False)
         help_embed_4.add_field(name="VCMeme",
-                               value="Let's you have some fun with the people in your VC.\n!help vcmeme",
+                               value=f"Let's you have some fun with the people in your VC.\n{ctx.prefix}help vcmeme",
                                inline=False)
         help_embed_4.add_field(name="Quote",
-                               value="Allows you to quote the sayings of your fellow human beings.\n!help quote",
+                               value=f"Allows you to quote the sayings of your fellow human beings.\n{ctx.prefix}help quote",
                                inline=False)
         help_embed_4.set_footer(text="Page 4")
         help_embed_4.color = discord.Color.random()
 
         help_embed_5 = discord.Embed(title="Games")
+        help_embed_5.add_field(name="Guess",
+                               value=f"Lets you guess a number within any range.\n{ctx.prefix}help guess",
+                               inline=False)
         help_embed_5.add_field(name="Rps",
-                               value="Lets you play rock paper scissor with me **OR** your friends!\n!help rps",
+                               value=f"Lets you play rock paper scissor with me **OR** your friends{ctx.prefix}\n{ctx.prefix}help rps",
                                inline=False)
         help_embed_5.add_field(name="OddEve",
-                               value="Lets you play odd eve with me **OR** your friends!\n(cricket version coming out soon)\n!help rps",
+                               value=f"Lets you play odd eve with me **OR** your friends{ctx.prefix}\n(cricket version coming out soon)\n{ctx.prefix}help oddeve",
                                inline=False)
-        help_embed_5.add_field(name="More games coming soon!", value="You better believe it!")
+        help_embed_5.add_field(name="More games coming soon!", value=f"You better believe it!")
         help_embed_5.set_footer(text="Page 5")
         help_embed_5.color = discord.Color.random()
 
@@ -3670,7 +3899,7 @@ async def help(ctx, command=None):
                               description="With this command, you can see how fast I am reacting to your messages in milliseconds.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
-        embed.add_field(name="Usage:", value="!ping")
+        embed.add_field(name="Usage:", value=f"{ctx.prefix}ping")
         embed.set_footer(text="I do be very fast u know...")
         await ctx.send(embed=embed)
 
@@ -3680,7 +3909,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!makerole <rolename>\nCause you have the right to be LAZY")
+                        value=f"{ctx.prefix}makerole <rolename>\nCause you have the right to be LAZY")
         embed.set_footer(
             text="Only people with manage roles perms can use this so DON'T EVEN TRY, PEASANTS")
         await ctx.send(embed=embed)
@@ -3691,7 +3920,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!addrole @<membername> @<rolename>\nSo now you can be LAZIER!")
+                        value=f"{ctx.prefix}addrole @<membername> @<rolename>\nSo now you can be LAZIER!")
         embed.set_footer(
             text="Only people with manage roles perms can use this so DON'T EVEN TRY, PEASANTS")
         await ctx.send(embed=embed)
@@ -3703,7 +3932,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!editrole @<fromrolename> <torolename>\nCause why not?")
+                        value=f"{ctx.prefix}editrole @<fromrolename> <torolename>\nCause why not?")
         embed.set_footer(
             text="Only people with manage roles perms can use this so DON'T EVEN TRY, PEASANTS")
         await ctx.send(embed=embed)
@@ -3715,7 +3944,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!removerole @<membername> @<rolename>\nBasically making you a dictator...")
+                        value=f"{ctx.prefix}removerole @<membername> @<rolename>\nBasically making you a dictator...")
         embed.set_footer(
             text="Only people with manage roles perms can use this so DON'T EVEN TRY, PEASANTS")
         await ctx.send(embed=embed)
@@ -3727,7 +3956,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!deleterole @<rolename>\nImagine needing to delete roles ANYWAY...")
+                        value=f"{ctx.prefix}deleterole @<rolename>\nImagine needing to delete roles ANYWAY...")
         embed.set_footer(
             text="Only people with manage roles perms can use this so DON'T EVEN TRY, PEASANTS")
         await ctx.send(embed=embed)
@@ -3738,7 +3967,7 @@ async def help(ctx, command=None):
                               description="Need help with the my commands?\nWanna complain about them?\nMaybe make a suggestion?",
                               colour=discord.colour.Colour.green(),
                               inline=True)
-        embed.add_field(name="Usage:", value="!support\nSo you can visit our support server.")
+        embed.add_field(name="Usage:", value=f"{ctx.prefix}support\nSo you can visit our support server.")
         embed.set_footer(text="Get support its good for you")
         await ctx.send(embed=embed)
 
@@ -3747,8 +3976,17 @@ async def help(ctx, command=None):
                               description="Find out about the wierdos who join your servers.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
-        embed.add_field(name="Usage:", value="!userinfo @<membername>\n#gettingexposed")
+        embed.add_field(name="Usage:", value=f"{ctx.prefix}userinfo @<membername>\n#gettingexposed")
         embed.set_footer(text="Being a stalker eh?")
+        await ctx.send(embed=embed)
+
+    elif command.lower() == 'robmoji':
+        embed = discord.Embed(title="Help RobMoji",
+                              description="Steal an emoji from another server and make it yours. If a name is not given, it will take the emoji's name. Also pls make sure that you give a name from 2 to 32.",
+                              colour=discord.colour.Colour.green(),
+                              inline=True)
+        embed.add_field(name="Usage:", value=f"{ctx.prefix}robmoji emoji name_of_new_emoji\n#MINE!")
+        embed.set_footer(text="Should I call the cops?")
         await ctx.send(embed=embed)
 
     elif command.lower() == 'serverinfo':
@@ -3757,7 +3995,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!serverinfo\nNever forget your memories, or your server info.")
+                        value=f"{ctx.prefix}serverinfo\nNever forget your memories, or your server info.")
         embed.set_footer(text="But seriously, how did you forget?")
         await ctx.send(embed=embed)
 
@@ -3768,7 +4006,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!nick @<membername> <nickname>\nNow see what you can come up with...")
+                        value=f"{ctx.prefix}nick @<membername> <nickname>\nNow see what you can come up with...")
         embed.set_footer(text="Nasty surprise for the poor victim's names *sigh*")
         await ctx.send(embed=embed)
 
@@ -3779,7 +4017,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!about\nPlease use this :pleading_face:\nMy devs think NO ONE wants to know more about me...")
+                        value=f"{ctx.prefix}about\nPlease use this :pleading_face:\nMy devs think NO ONE wants to know more about me...")
         embed.set_footer(text="I mean, why not?")
         await ctx.send(embed=embed)
 
@@ -3790,29 +4028,29 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!snipe\nNow you can catch your sneaky server members in the act!")
+                        value=f"{ctx.prefix}snipe\nNow you can catch your sneaky server members in the act!")
         embed.set_footer(text="More stonx for u")
         await ctx.send(embed=embed)
 
 
     elif command.lower() == 'invite':
-        embed = discord.Embed(title="Help About",
+        embed = discord.Embed(title="Help Invtie",
                               description="Use this to invite me to your other servers.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!about\nPlease use this :pleading_face:\nYou. Can't. Get. Enough. Of. Me.")
+                        value=f"{ctx.prefix}about\nPlease use this :pleading_face:\nYou. Can't. Get. Enough. Of. Me.")
         embed.set_footer(text="I'm the BEST")
         await ctx.send(embed=embed)
 
 
     elif command.lower() == 'website':
-        embed = discord.Embed(title="Help About",
+        embed = discord.Embed(title="Help Website",
                               description="My developers have a website. Go check it out.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!about\nPlease use this :pleading_face:\nIt's not really related to me, but its cool anyway.")
+                        value=f"{ctx.prefix}about\nPlease use this :pleading_face:\nIt's not really related to me, but its cool anyway.")
         embed.set_footer(text="See you there!")
         await ctx.send(embed=embed)
 
@@ -3823,7 +4061,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!slowmode <timeinseconds>\nThat will stop the SPAMMERS")
+                        value=f"{ctx.prefix}slowmode <timeinseconds>\nThat will stop the SPAMMERS")
         embed.set_footer(text="Sad life for spammers.")
         await ctx.send(embed=embed)
 
@@ -3834,7 +4072,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!blacklist @<membername>\nThis is one of the most CRUELLEST punishments possible.")
+                        value=f"{ctx.prefix}blacklist @<membername>\nThis is one of the most CRUELLEST punishments possible.")
         embed.set_footer(text="Not using CHAD be SAD")
         await ctx.send(embed=embed)
 
@@ -3845,7 +4083,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!unblacklist @<membername>\nOnly kindness can make you use this command.")
+                        value=f"{ctx.prefix}unblacklist @<membername>\nOnly kindness can make you use this command.")
         embed.set_footer(text="Unblacklisters = Saviours")
         await ctx.send(embed=embed)
 
@@ -3856,7 +4094,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!clear\nHelps when your server members just don't want to stop chatting...")
+                        value=f"{ctx.prefix}clear\nHelps when your server members just don't want to stop chatting...")
         embed.set_footer(text="Get ERASED")
         await ctx.send(embed=embed)
 
@@ -3866,7 +4104,7 @@ async def help(ctx, command=None):
                               description="Basically stops EVERYONE from using the channel.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
-        embed.add_field(name="Usage:", value="!lockdown <trueorfalse>\nFor total Monarchy servers.")
+        embed.add_field(name="Usage:", value=f"{ctx.prefix}lockdown <trueorfalse>\nFor total Monarchy servers.")
         embed.set_footer(text="Imagine needing lockdown in discord...")
         await ctx.send(embed=embed)
 
@@ -3877,8 +4115,18 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!warn <username> <reason>\nOnly for those naughty users who don't like rules.")
+                        value=f"{ctx.prefix}warn <username> <reason>\nOnly for those naughty users who don't like rules.")
         embed.set_footer(text="So you've been warned...")
+        await ctx.send(embed=embed)
+
+    elif command.lower() == 'prefix':
+        embed = discord.Embed(title="Help Prefix",
+                              description="Change dat prefix",
+                              colour=discord.Color.random(),
+                              inline=True)
+        embed.add_field(name="Usage:",
+                        value=f"{ctx.prefix}prefix <newprefix>\nVery handy for big servers!")
+        embed.set_footer(text="Just don't forget what your prefix was...")
         await ctx.send(embed=embed)
 
 
@@ -3888,7 +4136,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!userwarn @<username>\nNow you have a record of their crimes.")
+                        value=f"{ctx.prefix}userwarn @<username>\nNow you have a record of their crimes.")
         embed.set_footer(text="*Evil laughter from admins*")
         await ctx.send(embed=embed)
 
@@ -3899,7 +4147,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!unmute @<username>\nThis makes the able to talk in your server again.")
+                        value=f"{ctx.prefix}unmute @<username>\nThis makes the able to talk in your server again.")
         embed.set_footer(text="Support Freedom of Speech")
         await ctx.send(embed=embed)
 
@@ -3910,7 +4158,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!tempmute <timeinseconds>s @<username>\nIf you think you may forget to unmute a user, then I do it for you!")
+                        value=f"{ctx.prefix}tempmute <timeinseconds>s @<username>\nIf you think you may forget to unmute a user, then I do it for you!")
         embed.set_footer(text="That's one less thing to remember...")
         await ctx.send(embed=embed)
 
@@ -3921,7 +4169,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!mute @<username>\nNow they can't talk until you allow them too!")
+                        value=f"{ctx.prefix}mute @<username>\nNow they can't talk until you allow them too!")
         embed.set_footer(text="Sad life for the muted")
         await ctx.send(embed=embed)
 
@@ -3932,7 +4180,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!kick @<username>\nSo basically they just get yeeted out.")
+                        value=f"{ctx.prefix}kick @<username>\nSo basically they just get yeeted out.")
         embed.set_footer(text="Get rekt lol")
         await ctx.send(embed=embed)
 
@@ -3943,7 +4191,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!unban @<username>\nSo that they can return to the server.")
+                        value=f"{ctx.prefix}unban @<username>\nSo that they can return to the server.")
         embed.set_footer(text="Oh look, they're back lol")
         await ctx.send(embed=embed)
 
@@ -3954,7 +4202,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!tempban <timeinseconds>s @<username>\nIf you really hate someone, and may \"accidentally\" forget to unban them...")
+                        value=f"{ctx.prefix}tempban <timeinseconds>s @<username>\nIf you really hate someone, and may \"accidentally\" forget to unban them...")
         embed.set_footer(text="That's just sus uk")
         await ctx.send(embed=embed)
 
@@ -3965,18 +4213,18 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!mute @<username>\nThey can NEVER COME BACK NOW MWA HA HA HA\nJeez I was only joking")
+                        value=f"{ctx.prefix}mute @<username>\nThey can NEVER COME BACK NOW MWA HA HA HA\nJeez I was only joking")
         embed.set_footer(text="Get banished lmao")
         await ctx.send(embed=embed)
 
 
     elif command.lower() == 'dictionary':
         embed = discord.Embed(title="Help Dictionary",
-                              description="Let's you access a dictionary through discord!",
+                              description="Lets you access a dictionary through discord!",
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!dictionary <word>\nWhat you can do is get meanings, synonyms and antonyms!\nThen you type either meanings, synonyms or antonyms.")
+                        value=f"{ctx.prefix}dictionary <word>\nWhat you can do is get meanings, synonyms and antonyms!\nThen you type either meanings, synonyms or antonyms.")
         embed.set_footer(text="All for geeky lil nerds!")
         await ctx.send(embed=embed)
 
@@ -3987,7 +4235,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!translate <wordtotranslate>\nAnd then you enter the language translate to.")
+                        value=f"{ctx.prefix}translate <wordtotranslate>\nAnd then you enter the language translate to.")
         embed.set_footer(text="Merci!")
         await ctx.send(embed=embed)
 
@@ -3998,7 +4246,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!search <cityname>\nAny city can be searched for!")
+                        value=f"{ctx.prefix}search <cityname>\nAny city can be searched for!")
         embed.set_footer(text="Try searching \"Israel\" lol")
         await ctx.send(embed=embed)
 
@@ -4009,7 +4257,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!wiki <whatyouwannasearch>\nCause clearly, google wasn't enough.")
+                        value=f"{ctx.prefix}wiki <whatyouwannasearch>\nCause clearly, google wasn't enough.")
         embed.set_footer(text="Wisdom is in DISCORD PPL")
         await ctx.send(embed=embed)
 
@@ -4020,7 +4268,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!urban <whatyouwannasearch>\nAn interesting place of knowledge.")
+                        value=f"{ctx.prefix}urban <whatyouwannasearch>\nAn interesting place of knowledge.")
         embed.set_footer(text="The urban dict be lollers (I mean try searching your own name)")
         await ctx.send(embed=embed)
 
@@ -4031,7 +4279,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!ask <question>\nIts prophetic power is to be respected.")
+                        value=f"{ctx.prefix}ask <question>\nIts prophetic power is to be respected.")
         embed.set_footer(text="The Bot don't lie...")
         await ctx.send(embed=embed)
 
@@ -4042,7 +4290,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!repeat <messagetorepeat>\nWhy do I have to do the dirty work?")
+                        value=f"{ctx.prefix}repeat <numberoftimes> <messagetorepeat>\nWhy do I have to do the dirty work?")
         embed.set_footer(text="Just don't get blacklisted lol")
         await ctx.send(embed=embed)
 
@@ -4052,7 +4300,7 @@ async def help(ctx, command=None):
                               description="Makes me **role**(pun intended) a dice for you.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
-        embed.add_field(name="Usage:", value="!dice\nYou get a random number for 1 to 6! Yay!")
+        embed.add_field(name="Usage:", value=f"{ctx.prefix}dice\nYou get a random number for 1 to 6! Yay!")
         embed.set_footer(text="Ok this is starting to get ridiculously lazy")
         await ctx.send(embed=embed)
 
@@ -4062,7 +4310,7 @@ async def help(ctx, command=None):
                               description="Now you can find out how epic you are at gaming.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
-        embed.add_field(name="Usage:", value="!epicgamerrate\nThis is totally true btw")
+        embed.add_field(name="Usage:", value=f"{ctx.prefix}epicgamerrate\nThis is totally true btw")
         embed.set_footer(text="It's a perfect way of knowing how good you are!")
         await ctx.send(embed=embed)
 
@@ -4072,7 +4320,7 @@ async def help(ctx, command=None):
                               description="Now you can find out how much you simp.",
                               colour=discord.colour.Colour.green(),
                               inline=True)
-        embed.add_field(name="Usage:", value="!simprate\nThis is totally true btw")
+        embed.add_field(name="Usage:", value=f"{ctx.prefix}simprate\nThis is totally true btw")
         embed.set_footer(text="It's a perfect way of knowing how simpy you are!")
         await ctx.send(embed=embed)
 
@@ -4083,7 +4331,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!poll <timeinseconds> <whatyoupollfor>: <optionswithcommas>\nEveryone can just choose what they wanna choose.")
+                        value=f"{ctx.prefix}poll <timeinseconds> <whatyoupollfor>: <optionswithcommas>\nEveryone can just choose what they wanna choose.")
         embed.set_footer(text="I don't think there is any other way to poll on discord...")
         await ctx.send(embed=embed)
 
@@ -4094,7 +4342,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!encrypt <stufftoencrypt>\n!decrypt <stufftodecrypt>\nCheck out the way this script works [here](https://secret-message-encoder-decoder.itszeroandone.repl.co/).")
+                        value=f"{ctx.prefix}encrypt <stufftoencrypt>\n!decrypt <stufftodecrypt>\nCheck out the way this script works [here](https://secret-message-encoder-decoder.itszeroandone.repl.co/).")
         embed.set_footer(text="You'll love the script.")
         await ctx.send(embed=embed)
 
@@ -4105,8 +4353,19 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!ascii <stufftoput>\nI can't really explain it's beauty.")
+                        value=f"{ctx.prefix}ascii <stufftoput>\nI can't really explain it's beauty.")
         embed.set_footer(text="What you put may or may not be what you get")
+        await ctx.send(embed=embed)
+
+    
+    elif command.lower() == 'act':
+        embed = discord.Embed(title="Help Act",
+                              description="Use this to make me act like another user!",
+                              colour=discord.colour.Colour.green(),
+                              inline=True)
+        embed.add_field(name="Usage:",
+                        value=f"{ctx.prefix}act @<usertoactlike> <messagetouse>\nMostly used for fake evidence :smiling_imp:")
+        embed.set_footer(text="This is for pure evil purposes")
         await ctx.send(embed=embed)
 
     elif command.lower() == 'binary':
@@ -4115,7 +4374,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!binary <yourstring>")
+                        value=f"{ctx.prefix}binary <yourstring>")
         embed.set_footer(text="Zeros and Ones are cool")
         await ctx.send(embed=embed)
 
@@ -4125,7 +4384,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!choose <choices>\nAgain, this bot knows everything.\nIt makes the correct choice.")
+                        value=f"{ctx.prefix}choose <choices>\nAgain, this bot knows everything.\nIt makes the correct choice.")
         embed.set_footer(text="The bot KNOWS")
         await ctx.send(embed=embed)
 
@@ -4136,21 +4395,9 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!coinflip <heads/tails>\nYou choose correct, you win.")
+                        value=f"{ctx.prefix}coinflip <heads/tails>\nYou choose correct, you win.")
         embed.set_footer(text="So pretty obvious how you lose")
         await ctx.send(embed=embed)
-
-
-    elif command.lower() == 'guess':
-        embed = discord.Embed(title="Help Guess",
-                              description="Let's you play guess the number between literally any two numbers.",
-                              colour=discord.colour.Colour.green(),
-                              inline=True)
-        embed.add_field(name="Usage:",
-                        value="!guess <lowerboundary> <upperboundary>\nThen you just guess ig...")
-        embed.set_footer(text="Bet you can't beat my dev Zero in 1 - 10000")
-        await ctx.send(embed=embed)
-
 
     elif command.lower() == 'hack':
         embed = discord.Embed(title="Help Hack",
@@ -4158,8 +4405,19 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!hack @<membername>\nA lot of bad stuff happens.\nUse only in cases of extreme hate or prejudice.")
+                        value=f"{ctx.prefix}hack @<membername>\nA lot of bad stuff happens.\nUse only in cases of extreme hate or prejudice.")
         embed.set_footer(text="The bad stuff be bad")
+        await ctx.send(embed=embed)
+
+    
+    elif command.lower() == 'gif':
+        embed = discord.Embed(title="Help Gif",
+                              description="Allows you to search giphy for GIFS",
+                              colour=discord.Color.random(),
+                              inline=True)
+        embed.add_field(name="Usage:",
+                        value=f"{ctx.prefix}gif <nameofgif>\nGifs are cool yay")
+        embed.set_footer(text="Who needs inbuilt GIFs smh")
         await ctx.send(embed=embed)
 
 
@@ -4169,7 +4427,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!imagememes \nGives you a list of image memes. Enjoy!")
+                        value=f"{ctx.prefix}imagememes \nGives you a list of image memes. Enjoy!")
         embed.set_footer(text="Cause there can NEVER be enough memes")
         await ctx.send(embed=embed)
 
@@ -4180,7 +4438,7 @@ async def help(ctx, command=None):
                               colour=discord.colour.Colour.green(),
                               inline=True)
         embed.add_field(name="Usage:",
-                        value="!vcmeme <chosenvcmeme>\nThe list is long...\nTo check the list, type !vcmemes list")
+                        value=f"{ctx.prefix}vcmeme <chosenvcmeme>\nThe list is long...\nTo check the list, type {ctx.prefix}vcmeme")
         embed.set_footer(text="I feel sorry for VC users...")
         await ctx.send(embed=embed)
 
@@ -4190,8 +4448,18 @@ async def help(ctx, command=None):
                               description="Creates a quote so you can remember your most famous sayings!",
                               colour=discord.colour.Colour.green(),
                               inline=True)
-        embed.add_field(name="Usage:", value="!quote <quoter> <quote>\nIt gives you glory.")
+        embed.add_field(name="Usage:", value=f"{ctx.prefix}quote <quoter> <quote>\nIt gives you glory.")
         embed.set_footer(text="Always remember...")
+        await ctx.send(embed=embed)
+
+    elif command.lower() == 'guess':
+        embed = discord.Embed(title="Help Guess",
+                              description="Let's you play guess the number between literally any two numbers.",
+                              colour=discord.colour.Colour.green(),
+                              inline=True)
+        embed.add_field(name="Usage:",
+                        value=f"{ctx.prefix}guess <lowerboundary> <upperboundary>\nThen you just guess ig...")
+        embed.set_footer(text="Bet you can't beat my dev Zero in 1 - 10000")
         await ctx.send(embed=embed)
 
     elif command.lower() == 'rps':
@@ -4199,8 +4467,8 @@ async def help(ctx, command=None):
                               description="You can either play:",
                               colour=discord.colour.Colour.green(),
                               inline=True)
-        embed.add_field(name="Single player:", value="Use !rps <rock/paper/scissor> to play against me, or")
-        embed.add_field(name="Multi player:", value="Use !rps <useryouwanttodefeat> to play against them.")
+        embed.add_field(name="Single player:", value=f"Use {ctx.prefix}rps <rock/paper/scissor> to play against me, or")
+        embed.add_field(name="Multi player:", value=f"Use {ctx.prefix}rps <useryouwanttodefeat> to play against them.")
         embed.set_footer(text="Its a great game!")
         await ctx.send(embed=embed)
 
@@ -4209,8 +4477,8 @@ async def help(ctx, command=None):
                               description="You can either play:",
                               colour=discord.colour.Colour.green(),
                               inline=True)
-        embed.add_field(name="Single player:", value="Use !oddeve <odd/even> to play against me, or")
-        embed.add_field(name="Multi player:", value="Use !oddeve <useryouwanttodefeat> to play against them.")
+        embed.add_field(name="Single player:", value=f"Use {ctx.prefix}oddeve <odd/even> to play against me, or")
+        embed.add_field(name="Multi player:", value=f"Use {ctx.prefix}oddeve <useryouwanttodefeat> to play against them.")
         embed.set_footer(text="Its a great game!")
         await ctx.send(embed=embed)
 
