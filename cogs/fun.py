@@ -964,5 +964,309 @@ class Fun(commands.Cog):
         embed.set_footer(text=f"- {quote.replace('@', '')}")
         await ctx.send(embed=embed)
         
+    @hack.error
+    async def hack_error(self,ctx,error):
+        member = ctx.author
+
+        if checkping(ctx.message.guild.id) == 'true':
+            membervar = member.mention
+
+        else:
+            membervar = member.display_name
+
+        if isinstance(error, commands.MissingRequiredArgument):
+
+            await ctx.send(embed=discord.Embed(title="Your kidding right?",
+                                            description=f"{membervar} please mention a user to hack\n That way, I won't need to hack thin air!!",
+                                            color=discord.Color.random()))
+
+        elif isinstance(error, commands.UserNotFound):
+            await ctx.send(embed=discord.Embed(title="This is ridiculous",
+                                            description=f"<:ZO_Bruh:866252668225585152> {membervar} have the brain cells to mention the target smh.\n How are you unable to MENTION SOMEONE"))
+
+        else:
+            raise (error)
+    
+    @ask.error
+    async def ask_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"What were you asking again?",
+                                description=f"All I heard was ___",
+                                color=discord.Color.random())
+            embed.set_footer(text="Either I'm deaf, or you didn't even ask.")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+
+    @gif.error
+    async def gif_error(self,ctx,error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"What were you searching gifs for again?",
+                                description=f"All I heard was ___",
+                                color=discord.Color.random())
+            embed.set_footer(
+                text="Either I'm deaf, or you didn't even type anything to search.")
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            embed = discord.Embed(title=f"Lmao sad life!",
+                                description=f"Didn't find anything",
+
+                                color=discord.Color.random())
+            embed.set_footer(text=f"sad puppy")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+
+    @repeat.error
+    async def repeat_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Ik spamming is fun sometimes",
+                                description=f"Spamming absolutely nothing, however, is not enjoyable.",
+                                color=discord.Color.random())
+            embed.set_footer(text="You'd just be staring at the screen then")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            embed = discord.Embed(title=f"Ik spamming is fun sometimes",
+                                description=f"But it would be really helpful if you give me number of times i have to spam?",
+
+                                color=discord.Color.random())
+            embed.set_footer(
+                text=f"They expect me to repeat stuff without telling me how many times")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.CommandOnCooldown):
+            em = discord.Embed(title=f"Slow it down bro!", description=f"Try again in {error.retry_after:.0f}s.",
+                            color=discord.Color.random())
+            em.set_footer(text="Bruh I know spam is fun but keep it a bit down")
+            await ctx.send(embed=em)
+        else:
+            raise (error)
+
+
+    @epicgamerrate.error
+    async def gamerrate_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title=f"I wish I knew how EPIC this user is.",
+                                description=f"But sadly he doesn't exist.",
+                                color=discord.Color.random())
+            embed.set_footer(text="Ima go cry now")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+
+    @simprate.error
+    async def simprate_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title=f"Trying to see how much they simp eh?",
+                                description=f"Oh wait. They don't exist!.\n So ima guess its 0",
+                                color=discord.Color.random())
+            embed.set_footer(text="Im smart BOI")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+
+    @poll.error
+    async def poll_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Ah I fell you",
+                                description=f"This command is way too complex. Use {ctx.prefix}help poll",
+                                color=discord.Color.random())
+            embed.set_footer(
+                text="The one command where mistakes be understandable")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+
+    @ascii.error
+    async def ascii_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Done!",
+                                description=f"Successfully converted *nothing* into a beautiful picture!\nNow try actually giving me something for me to use",
+                                color=discord.Color.random())
+            embed.set_footer(text="smh smh SMH")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            embed = discord.Embed(title=f"BRUHH!",
+                                description=f"That is too big to send!!",
+                                color=discord.Color.random())
+            embed.set_footer(text="That's what she said")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+
+    @act.error
+    async def act_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Bruh please give me all arguments for the command!",
+                                description=f"It is... `{ctx.prefix}act @person_you_wanna_enact stuff_u_want_it_to_say`",
+                                color=discord.Color.random())
+            embed.set_footer(text="smh smh SMH")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title=f"BRUHH!",
+                                description=f"Mention a human to act",
+                                color=discord.Color.random())
+            embed.set_footer(text="Who am i supposed to mimic... Joe Ma--")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+    @binary.error
+    async def binary_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Well you didn't input anything",
+                                description=f"I'm assuming you want the binary code of a space key.\nIt's `00100000",
+                                color=discord.Color.random())
+            embed.set_footer(
+                text="Tho you didn't want the binary of space did you?")
+            await ctx.send(embed=embed)
+
+        if isinstance(error, discord.ext.commands.errors.CommandInvokeError):
+            embed = discord.Embed(title="Chill out dude",
+                                description="I can't send you something that long.\nTry putting a shorter message.",
+                                color=discord.Color.random())
+            embed.set_footer(text="That was going to be SO difficult to send")
+            await ctx.send(embed=embed)
+        else:
+            raise (error)
+
+
+    @encrypt.error
+    async def encrypt_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Encrypted!",
+                                description=f"`*Nothing*`",
+                                color=discord.Color.random())
+            embed.set_footer(text="lollers")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+
+    @decrypt.error
+    async def decrypt_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Decrypted!",
+                                description=f"`*Nothing*`",
+                                color=discord.Color.random())
+            embed.set_footer(text="Even more lollers")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+    @choose.error
+    async def choose_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            if isinstance(error, commands.MissingRequiredArgument):
+                embed = discord.Embed(title=f"Alright, if that's what you wish",
+                                    description=f"I choose this particular non-existent thing over the other.",
+                                    color=discord.Color.random())
+                embed.set_footer(
+                    text="Don't really know what you will achieve with that knowledge")
+                await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+    
+
+    @worthless.error
+    async def worthless_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Worthlessness has a limit",
+                                description=f"`*Nothing*` can't be worthless",
+                                color=discord.Color.random())
+            embed.set_footer(text="This is philosophy")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+
+
+    @wanted.error
+    async def wanted_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MemberNotFound):
+            if isinstance(error, commands.MissingRequiredArgument):
+                embed = discord.Embed(title=f"Do you hate your legal system?",
+                                    description=f"Your trying to make the authorities do their best to try and catch *no one*",
+                                    color=discord.Color.random())
+                embed.set_footer(text="I wonder why...")
+                await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+    @rip.error
+    async def rip_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title=f"Imagine going to a grave yard...",
+                                description=f"And finding gravestones where people have no names.",
+                                color=discord.Color.random())
+            embed.set_footer(text="Low budget cemetery")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+    @chad.error
+    async def chad_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title=f"Chad is great!",
+                                description=f"I mean, I am Chad.\nBut Chad without a head... naaa",
+                                color=discord.Color.random())
+            embed.set_footer(text="Headless Chad WOULD be funny tho")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+    @quote.error
+    async def quote_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            abelin = "\n\"The Best way to predict your future is to create it.\" -Abraham Lincoln\n"
+            suntzu = "\"The supreme art of war is to subdue the enemy without fighting.\" -Sun Tzu, The Art of War"
+            embed = discord.Embed(title=f"Ahh, the quotes",
+                                description=f"Some famous quotes are: {abelin} {suntzu}\nHowever, Nothing -No One, is not a good quote",
+                                color=discord.Color.random())
+            embed.set_footer(text="I mean, duh")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
 def setup(bot):
     bot.add_cog(Fun(bot))

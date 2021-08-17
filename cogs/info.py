@@ -94,7 +94,7 @@ class Info(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def wiki(ctx, *, question):
+    async def wiki(self,ctx, *, question):
         try:
             wiki = wikipedia.summary(question, 2)
             embed = discord.Embed(
@@ -165,6 +165,79 @@ class Info(commands.Cog):
             await ctx.send(embed=discord.Embed(title=f"Sorry mate i couldn't find sh*t for", description=f"```{keyword}```",
                                                color=discord.Color.random()))
 
+    @dictionary.error
+    async def dict_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Alright.",
+                                description=f"The definition of nothing is ___. It probably has synonyms and antonyms, but idrc.",
+                                color=discord.Color.random())
+            embed.set_footer(text="Im not stupid")
+            await ctx.send(embed=embed)
 
+        else:
+            raise (error)
+
+
+    @translate.error
+    async def translate_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Why is this difficult",
+                                description=f"All you gotta do, is use {ctx.prefix}help translate and do what it says.",
+                                color=discord.Color.random())
+            embed.set_footer(text="Why you being like this")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            embed = discord.Embed(title=f"Well that didn't work.....",
+                                description=f"Probably u put in some invalid shit",
+                                color=discord.Color.random())
+            embed.set_footer(text="Failed! Just like your life")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+    @urban.error
+    async def urban_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"I can't believe it.",
+                                description=f"This was the place where i really didn't expect an error. Use {ctx.prefix}Help urban for god's sake!",
+                                color=discord.Color.random())
+            embed.set_footer(text="Wish you could use more brain power for this")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+
+    @weather.error
+    async def weather_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Did you just try to find the weather of NOWHERE?!",
+                                description=f"I don't even know what to say",
+                                color=discord.Color.random())
+            embed.set_footer(text="Actually I do. Try being smart.")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+
+    @wiki.error
+    async def wiki_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"It's good you search for knowledge",
+                                description=f"But at least tell me what knowledge you want.\n There are a trillion+ websites of info out there.",
+                                color=discord.Color.random())
+            embed.set_footer(text="It's a huge world")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
 def setup(bot):
     bot.add_cog(Info(bot))

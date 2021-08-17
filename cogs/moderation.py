@@ -609,5 +609,333 @@ class Moderation(commands.Cog):
                 embed=discord.Embed(title="Stop right there!", description="You require the Ban Member permission.",
                                     color=discord.Color.green()))
 
+
+
+    @slowmode.error
+    async def slowmode_error(self,ctx,error):
+        if isinstance(error, commands.MissingRequiredArgument):
+
+            if ctx.channel.slowmode_delay == 0:
+                await ctx.send("Slowmode disabled already dumbass")
+                return
+
+            if ctx.author.guild_permissions.administrator:
+                await ctx.channel.edit(slowmode_delay=0)
+                await ctx.send(embed=discord.Embed(title="Slowmode disabled!", color=discord.Color.dark_magenta(),
+                                                description="Now y'all can talk your heart out"))
+
+            else:
+                await ctx.send(
+                    embed=discord.Embed(title="Stop right there!", description="You require the Administrators permission.",
+                                        color=discord.Color.green()))
+
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(
+                embed=discord.Embed(title="How hard is it to set a slowmode :rolling_eyes: ", color=discord.Color.magenta(),
+                                    description=f"Do {ctx.prefix}slowmode to disable it and {ctx.prefix}slowmode 10 to set slowmode of 10 secs"))
+
+    @blacklist.error
+    async def blacklist_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"C'mon dude",
+                                description=f"I don't really want to stop people from using me\nBut if you really want me too, then at least tell me who to stop?",
+                                color=discord.Color.random())
+            embed.set_footer(text="The least you can do")
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title=f"Please stop making this hard for me...",
+                                description=f"Just mention who I must stop.\nRandom names won't really do",
+                                color=discord.Color.random())
+            embed.set_footer(text="Is this necessary")
+            await ctx.send(embed=embed)
+        else:
+            raise (error)
+
+
+    @unblacklist.error
+    async def unblacklist_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Are u serious?",
+                                description=f"Reminding you the blacklisting thin air is NOT possible",
+                                color=discord.Color.random())
+            embed.set_footer(text="I mean, isn't it obvious?")
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.MemberFound):
+            embed = discord.Embed(title=f"Stop memeing. Just stop.",
+                                description=f"This user is not in this server.",
+                                color=discord.Color.random())
+            embed.set_footer(text="Have some mercy...")
+            await ctx.send(embed=embed)
+        else:
+            raise (error)
+
+    @clear.error
+    async def clear_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"That's pretty vague",
+                                description=f"You tell me to clear message but don't tell me how many.\nSo do I clear them all?",
+                                color=discord.Color.random())
+            embed.set_footer(text="Maybe NOT a good idea...")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.BadArgument):
+            embed = discord.Embed(title=f"Numbers. -_-",
+                                description=f"I can only clear a number of messages. What else did you expect?",
+                                color=discord.Color.random())
+            embed.set_footer(text="You be being sus")
+            await ctx.send(embed=embed)
+        else:
+            raise (error)
+
+
+    @warn.error
+    async def warn_error(self,ctx,error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Alright I'll bite",
+                                description=f"Who am I supposed to warn?",
+                                color=discord.Color.random())
+            embed.set_footer(text="Mentioning that wud be gr8")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title=f"I couldn't find this user.",
+                                description=f"So instead I warned my friend Louis here...",
+                                color=discord.Color.random())
+            embed.set_footer(text="Wait... what have you done to Louis?")
+            await ctx.send(embed=embed)
+        else:
+            raise (error)
+
+    @userwarn.error
+    async def userwarn_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"I refuse",
+                                description=f"I simply refuse to give you the warnings of *NOTHING*",
+                                color=discord.Color.random())
+            embed.set_footer(text="That would be a crime")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.UserNotFound):
+            embed = discord.Embed(title=f"Ok no",
+                                description=f"Reminding you that seeing the warnings of an invalid user is not allowed!",
+                                color=discord.Color.random())
+            embed.set_footer(text="Kids these days...")
+            await ctx.send(embed=embed)
+        else:
+            raise (error)
+
+
+    @lockdown.error
+    async def lockdown_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Ah sad",
+                                description=f"U need to use either {ctx.prefix}lockdown true or {ctx.prefix}lockdown false",
+                                color=discord.Color.random())
+            embed.set_footer(text="That's how that works")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.error.CommandsInvokeError):
+            embed = discord.Embed(title=f"I need more PERMS",
+                                description=f"I need to be able to manage the server.\nNow use your comman sense and give me the perm necessary.",
+                                color=discord.Color.random())
+            embed.set_footer(text="Hopefully you have some")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+    @unmute.error
+    async def unmute_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Mention the user please",
+                                description=f"I cannot unmute the void obviously",
+                                color=discord.Color.random())
+            embed.set_footer(text="Mentioning someone helps tho")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title=f"I really don't like this",
+                                description=f"Pretty sure that Mr. Nothing couldn't talk in the first place.",
+                                color=discord.Color.random())
+            embed.set_footer(text="unmuting nothing is a horrific idea")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            embed = discord.Embed(title=f"Nope, the member is more powerful than me",
+                                description=f"Maybe put my role above him :pleading_face:",
+                                color=discord.Color.random())
+            embed.set_footer(text="I feel weak")
+            await ctx.send(embed=embed)
+        else:
+            raise (error)
+
+    @kick.error
+    async def kick_error(self,ctx,error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Mention the user please",
+                                description=f"I cannot kick the void obviously",
+                                color=discord.Color.random())
+            embed.set_footer(text="Mentioning someone helps tho")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title=f"I really don't like this",
+                                description=f"Pretty sure that this person didn't exist in the first place.",
+                                color=discord.Color.random())
+            embed.set_footer(text="Kicking the air... *shudder")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            embed = discord.Embed(title=f"Nope, the member is more powerful than me",
+                                description=f"Maybe put my role above him :pleading_face:",
+                                color=discord.Color.random())
+            embed.set_footer(text="I feel weak")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+
+    @mute.error
+    async def mute_error(self,ctx,error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Muting is not nice...",
+                                description=f"But if you insist on it, mention *WHO* you want to mute.",
+                                color=discord.Color.random())
+            embed.set_footer(text="Because respect")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title=f"Muting random people is acceptable...",
+                                description=f"...when the people actually exist",
+                                color=discord.Color.random())
+            embed.set_footer(text="So make sure they do")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+    @tempmute.error
+    async def tempmute_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Trying to tempmute no one",
+                                description=f"Is not something people do\nYou seriously must mention who you wanna temp mute.",
+                                color=discord.Color.random())
+            embed.set_footer(text="This *no user mentioned* thing is getting old.")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title=f"Did you just try to temp mute a user who isn't in this server.",
+                                description=f"Tbh I deal with that non-sense so much I'm not even surprised.",
+                                color=discord.Color.random())
+            embed.set_footer(text="But seriously, stop")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            embed = discord.Embed(title=f"Nope, the member is more powerful than me",
+
+                                description=f"Maybe put my role above him :pleading_face:",
+
+                                color=discord.Color.random())
+
+            embed.set_footer(text="I feel weak")
+
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+
+    @ban.error
+    async def ban_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"If only you were competent",
+                                description=f"You would know the banning no one is a waste of time.",
+                                color=discord.Color.random())
+            embed.set_footer(text="Unpoggers indeed")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title=f"Banning is a sad thing",
+                                description=f"It becomes 10 times worse when you can't even properly tell me who to ban!",
+                                color=discord.Color.random())
+            embed.set_footer(text="I may not have a life but still")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+
+            embed = discord.Embed(title=f"Nope, the member is more powerful than me",
+
+                                description=f"Maybe put my role above him :pleading_face:",
+
+                                color=discord.Color.random())
+
+            embed.set_footer(text="I feel weak")
+
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+    @tempban.error
+    async def tempban_error(self,ctx,error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Sure thing buddy",
+                                description=f"Ima tempban my old buddy Louis. Oh wait...",
+                                color=discord.Color.random())
+            embed.set_footer(text="I think that's why I couldn't find him be4")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title=f"You failed at typing properly",
+                                description=f"What else is new...",
+                                color=discord.Color.random())
+            embed.set_footer(text="I think the guy about to be banned is relieved")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            embed = discord.Embed(title=f"Nope, the member is more powerful than me",
+                                description=f"Maybe put my role above him :pleading_face:",
+                                color=discord.Color.random())
+            embed.set_footer(text="I feel weak")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+    @unban.error
+    async def unban_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"Unbanning is a sign of mercy",
+                                description=f"But it would make you look better in front of your friends if you mention someone to ban.",
+                                color=discord.Color.random())
+            embed.set_footer(text="IOn the bright side, you can now unban someone")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.UserNotFound):
+            embed = discord.Embed(title=f"Ahh the difficulty..",
+                                description=f"It must be so hard for you to be able to mention a valid user.",
+                                color=discord.Color.random())
+            embed.set_footer(text="This is sarcasm")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            embed = discord.Embed(title=f"Hold up!",
+                                description=f"What do you think I am? The server owner?\nI can't do that, I don't got the permission!",
+                                color=discord.Color.random())
+            embed.set_footer(text="Stop trying to take my rights")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
 def setup(bot):
     bot.add_cog(Moderation(bot))

@@ -5,12 +5,20 @@ import time
 import datetime
 import aiohttp
 from tinydb import TinyDB, Query
+def checkping(guild_id_var):
+    db = TinyDB('databases/pings.json')
+    query = Query()
+    values = str(list(map(lambda entry: entry["pingstate"],
+                          db.search(query.guild_id == str(guild_id_var))))[0])
+
+    return values.lower()
 
 class Utils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.last_msg = None
-    
+        self.bot.sniped_messages = {}
+
+
     @commands.command()
     async def ping(self,ctx):
         """Get the bot's current websocket and API latency."""
@@ -331,23 +339,27 @@ class Utils(commands.Cog):
 
 
 
-    @commands.Cog.listener()
-    async def on_message_delete(self, message: discord.Message):
-        self.last_msg = message
-
     
-    @commands.command(name="snipe")
-    async def snipe(self, ctx: commands.Context):
-        """A command to snipe delete messages."""
-        if not self.last_msg:  # on_message_delete hasn't been triggered since the bot started
-            await ctx.send("There is no message to snipe!")
+
+
+    @commands.Cog.listener()
+    async def on_message_delete(self,message):
+        self.bot.sniped_messages[message.guild.id] = (message.content, message.author, message.channel.name, message.created_at)
+
+    @commands.command()
+    async def snipe(self,ctx):
+        try:
+            contents, author, channel_name, time = self.bot.sniped_messages[ctx.guild.id]
+            
+        except:
+            await ctx.channel.send("Couldn't find a message to snipe!")
             return
 
-        author = self.last_msg.author
-        content = self.last_msg.content
+        embed = discord.Embed(description=contents, color=discord.Color.random(), timestamp=time)
+        embed.set_author(name=f"{author.name}#{author.discriminator}", icon_url=author.avatar_url)
+        embed.set_footer(text=f"Deleted in : #{channel_name}")
 
-        embed = discord.Embed(title=f"Message from {author}", description=content, color=discord.Color.random())
-        await ctx.send(embed=embed)
+        await ctx.channel.send(embed=embed)
 
         
     @commands.command()
@@ -381,5 +393,264 @@ class Utils(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar_url)
         await ctx.send(embed=embed)
 
+    @robmoji.error
+    async def rob_moji_error(self,ctx,error):
+        member = ctx.author
+        if checkping(ctx.message.guild.id) == 'true':
+            membervar = member.mention
+
+        else:
+            membervar = member.display_name
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send(embed=discord.Embed(title="You're kidding right?",
+                                            description=f"{membervar} please mention an emojito steal\n That way, I won't need to steal thin air!!",
+                                            color=discord.Color.random()))
+
+        elif isinstance(error, commands.errors.PartialEmojiConversionFailure):
+            error = getattr(error, "original", error)
+            the_error_arg = error.argument
+            embed = discord.Embed(title="Whoops",
+                                description=f"Could not convert {the_error_arg} to an emoji",
+                                color=discord.Color.random())
+            embed.set_footer(
+                text="If this is not you being dumb and a genuine error in the code,let us know here (https://discord.gg/TeRyp9JWbg)")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            await ctx.send(embed=discord.Embed(title="You're kidding right?",
+                                            description=f"{membervar} give it a name from 2 to 32 characters **ONLY**\nAnd NO SPACES PLS \n this is an emoji name not a train",
+                                            color=discord.Color.random()))
+
+        else:
+            raise (error)
+    @userinfo.error
+    async def userinfo_error(self,ctx,error):
+        member = ctx.author
+        if isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title="Did you know...",
+                                description="That it is an EXCELLENT idea to actually mention the user whose info you want?",
+                                color=discord.Color.random())
+            embed.set_footer(text="I mean, common sense people")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title="At least try to...",
+                                description="Wish you'd actually try to tell me who to get info from.",
+                                color=discord.Color.random())
+            embed.set_footer(text="Sigh")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+
+    @makerole.error
+    async def make_role_error(self,ctx,error):
+        member = ctx.author
+
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title="Hmmmm...",
+                                description="Why haven't you mentioned the NAME OF THE ROLE YOU WANT TO CREATE\nA role with the name ___ is pretty stupid.",
+                                color=discord.Color.random())
+            embed.set_footer(text="Think about it")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+    @addrole.error
+    async def add_role_error(self,ctx,error):
+        member = ctx.author
+        if checkping(ctx.message.guild.id) == 'true':
+            membervar = member.mention
+
+        else:
+            membervar = member.display_name
+
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title="How do you do these things...",
+                                description="You gotta mention both the user and the role.\nI can't just randomly place roles!",
+                                color=discord.Color.random())
+            embed.set_footer(text="Not in my job description")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title="I couldn't find this member",
+                                description="How have you tried to add roles to someone not in the server??",
+                                color=discord.Color.random())
+            embed.set_footer(text="Common sense just ain't common anymore...")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.RoleNotFound):
+            embed = discord.Embed(title="I didn't find this role.",
+                                description=f"Apparently this role doesn't even EXIST in your server.\nTry making the role with {ctx.prefix}makerole first.",
+                                color=discord.Color.random())
+            embed.set_footer(text="That would be great")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            embed = discord.Embed(title="I can't do that!",
+                                description=f"{membervar} you will have to place my role above that role.",
+                                color=discord.Color.random())
+            embed.set_footer(text="It is a necessity")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+    @editrole.error
+    async def edit_error(self,ctx,error):
+        member = ctx.author
+        if checkping(ctx.message.guild.id) == 'true':
+            membervar = member.mention
+
+        else:
+            membervar = member.display_name
+
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title="I didn't find this role.",
+                                description=f"{membervar} please mention the role to edit **AND** the new role.",
+                                color=discord.Color.random())
+            embed.set_footer(
+                text="Imagine being able to write bot commands properly...")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.RoleNotFound):
+            embed = discord.Embed(title="I didn't find this role.",
+                                description=f"{membervar} Mentioning a valid role couldn't HURT you know...",
+                                color=discord.Color.random())
+            embed.set_footer(text="The validity check never ends...")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            embed = discord.Embed(title="I can't do that!",
+                                description=f"{membervar} you will have to place my role above that role.",
+                                color=discord.Color.random())
+            embed.set_footer(text="It is a necessity")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+    @removerole.error
+    async def remove_role_error(self,ctx,error):
+        member = ctx.author
+        if checkping(ctx.message.guild.id) == 'true':
+            membervar = member.mention
+
+        else:
+            membervar = member.display_name
+
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title="I didn't find this role. (Again...)",
+                                description=f"{membervar} please mention the role to edit **AND** the new role. (Again)",
+                                color=discord.Color.random())
+            embed.set_footer(
+                text="Imagine being able to write bot commands properly... (Again...)")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.RoleNotFound):
+            embed = discord.Embed(title="I didn't find this role.",
+                                description=f"{membervar}Mentioning a valid role couldn't HURT you know...\nBut its sad I gotta repeat stuff I said be4.\n Didn't you guys see this is in the mistake of role edits?",
+                                color=discord.Color.random())
+            embed.set_footer(text="Once again, the validity check never ends...")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title="That username... is not in this server?",
+                                description=f"{membervar} I didn't find this so-called user name you mentioned.",
+                                color=discord.Color.random())
+            embed.set_footer(
+                text="I can only remove the role of people who exist in the server.")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            embed = discord.Embed(title="I do not have the permission!",
+                                description=f"{membervar} my place is currently BELOW that role.\nTry placing me above.",
+                                color=discord.Color.random())
+            embed.set_footer(text="It is a necessity")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+
+    @deleterole.error
+    async def delete_role_error(self,ctx,error):
+        member = ctx.author
+        if checkping(ctx.message.guild.id) == 'true':
+            membervar = member.mention
+
+        else:
+            membervar = member.display_name
+
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title="Ok cool",
+                                description=f"**Intense Concentration** There!\nI have deleted a non-existent role.",
+                                color=discord.Color.random())
+            embed.set_footer(text="No need to thank me...")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.RoleNotFound):
+            embed = discord.Embed(title=f"Dear {membervar}",
+                                description=f"I assure you that I will do my best to delete a role that I couldn't find in this server.",
+                                color=discord.Color.random())
+            embed.set_footer(text="I exist to serve")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            embed = discord.Embed(title="I do not have the permission!",
+                                description=f"{membervar} my place is currently BELOW that role.\nTry placing me above.",
+                                color=discord.Color.random())
+            embed.set_footer(text="It is a necessity")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+
+    @nick.error
+    async def nick_error(self,ctx,error):
+        member = ctx.author
+        from discord import errors
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = discord.Embed(title=f"What are you playing at?",
+                                description=f"Stop giving me half the info I need\nYou must tell me both, the User and his new nickname.",
+                                color=discord.Color.random())
+            embed.set_footer(text="Its not really that hard you know...")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title=f"People say they hate their job",
+                                description=f"I say my jobs easy.\nChanging nicknames of non-existent users.",
+                                color=discord.Color.random())
+            embed.set_footer(text="Now all I need is payment...")
+            await ctx.send(embed=embed)
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            embed = discord.Embed(title=f"Nope, the member is more powerful than me",
+                                description=f"Maybe put my role above him :pleading_face:",
+                                color=discord.Color.random())
+            embed.set_footer(text="I feel weak")
+            await ctx.send(embed=embed)
+
+        else:
+            raise (error)
+
+    @reminder.error
+    async def rem_error(self,ctx,error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send(embed=discord.Embed(title=f"{ctx.author.display_name} please give me time and the reminder",
+                                            color=discord.Color.random()))
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            await ctx.send(embed=discord.Embed(title=f"{ctx.author.display_name} That is an invalid time",
+                                            color=discord.Color.random()))
+
+        else:
+            raise (error)
+  
+
+    
 def setup(bot):
     bot.add_cog(Utils(bot))
