@@ -74,7 +74,6 @@ Well.... the list goes on and on and on but i guess you get the general idea....
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Chad][product-screenshot]](https://images.discordapp.net/avatars/864010316424806451/8e691992b8f3844daca21b589f91ec3d.png?size=128)
 
 A robust discord bot for all you needs, and great at everything it does. Has over 75 commands and is great fun!
 
@@ -99,6 +98,11 @@ To use the Chad Bot, do these steps(Although it is really ez)
 First you have to invite the bot(Cause that's generally how these things work!). So please invite it [here](https://discord.com/api/oauth2/authorize?client_id=864010316424806451&permissions=4227997759&scope=applications.commands%20bot)
 _For more examples on how the bot works, please join to the [support server](https://discord.gg/wTsj4DZhyZ)_
 
+
+## Using the commands
+
+
+Literally all you have to do is `!help`. You can also change prefix by doing `!prefix ^` and replace "^" with whatever prefix you want!
 
 
 <!-- ROADMAP -->
