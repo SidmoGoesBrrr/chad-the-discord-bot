@@ -19,9 +19,9 @@
   <h3 align="center">Chad</h3>
 
   <p align="center">
-    Ever wondered what all of your favourite bots rolled into one looks like? ONE WORD: CHAD. Basically anything and everything you can think of from banning members to making your text into a sick ascii looking text, asking questions to magic 8 Ball and making your own memes. You want to repeat 1 msg 20 times? We got ya
+Ever wondered what all of your favourite bots rolled into one looks like? ONE WORD: CHAD. Basically anything and everything you can think of from banning members to making your text into a sick ascii looking text, asking questions to magic 8 Ball and making your own memes. You want to repeat 1 msg 20 times? We got ya
 
-You want to kick, ban, mute, unmute, tempmute ,unban, unmute members and our personal favourite lock the server down(Bassically mute and unmute everyone with 1 command)? We got ya
+You want to kick, ban, mute, unmute, tempmute ,unban, unmute members and our personal favourite lock the server down(Basically mute and unmute everyone with 1 command)? We got ya
 
 You want to search custom gifs, make your own memes and rob emojis? We got ya
 
