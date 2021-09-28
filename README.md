@@ -32,9 +32,9 @@ You want to check wikipedia, dictionary, translate , the weather anywhere or urb
 Well.... the list goes on and on and on but i guess you get the general idea.... So what are you waiting for? INVITE CHAD NOW GAMERS!
     
     <a href="https://github.com/TechnoFrost27/chad-the-discord-bot">View Demo</a>
-    ·
+    
     <a href="https://github.com/TechnoFrost27/chad-the-discord-bot/issues">Report Bug</a>
-    ·
+    
     <a href="https://github.com/TechnoFrost27/chad-the-discord-bot/issues">Request Feature</a>
   </p>
 </p>
