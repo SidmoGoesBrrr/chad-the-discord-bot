@@ -13,7 +13,7 @@
 <br />
 <p align="center">
   <a href="https://github.com/TechnoFrost27/chad-the-discord-bot">
-    <img src="images/static1.png" alt="Logo" width="80" height="80">
+    <img src="images/static1.png" alt="Logo" width="300" height="300">
   </a>
 
   <h3 align="center">Chad</h3>
