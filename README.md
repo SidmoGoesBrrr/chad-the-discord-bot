@@ -57,8 +57,8 @@ Well.... the list goes on and on and on but i guess you get the general idea....
     <li>
       <a href="#getting-started">Getting Started</a>
       <ul>
-        <li><a href="#inviting the bot">Prerequisites</a></li>
-        <li><a href="#using the commands">Prerequisites</a></li>
+        <li><a href="#inviting-the-bot">Inviting The Bot</a></li>
+        <li><a href="#using-the-commands">Using The Commands</a></li>
       </ul>
     </li>
     <li><a href="#roadmap">Roadmap</a></li>
