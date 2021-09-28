@@ -31,10 +31,14 @@ You want to check wikipedia, dictionary, translate , the weather anywhere or urb
 
 Well.... the list goes on and on and on but i guess you get the general idea.... So what are you waiting for? INVITE CHAD NOW GAMERS!
     
-    <a href="https://github.com/TechnoFrost27/chad-the-discord-bot">View Demo</a>
-    
+ <br />
+    <a href="https://discord.com/api/oauth2/authorize?client_id=864010316424806451&permissions=4227997759&scope=applications.commands%20bot"><strong>Invite him»</strong></a>
+    <br />
+    <br />
+    <a href="https://discord.gg/wTsj4DZhyZ">Join Support Server</a>
+    ·
     <a href="https://github.com/TechnoFrost27/chad-the-discord-bot/issues">Report Bug</a>
-    
+    ·
     <a href="https://github.com/TechnoFrost27/chad-the-discord-bot/issues">Request Feature</a>
   </p>
 </p>
