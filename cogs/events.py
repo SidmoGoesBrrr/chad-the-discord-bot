@@ -3,7 +3,11 @@ from discord.ext import commands, tasks
 from discord_components import *
 from discord_components import DiscordComponents
 import os
+from datetime import datetime
+import pytz
 from tinydb import TinyDB, Query
+import csv
+
 def checkping(guild_id_var):
     db = TinyDB('databases/pings.json')
     query = Query()
@@ -17,6 +21,8 @@ class events(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         
+    
+    
 
     @tasks.loop(seconds=20)  # repeat after every 20 seconds
     async def myLoop(self):
@@ -36,7 +42,22 @@ class events(commands.Cog):
             status=discord.Status.idle,
             activity=discord.Activity(
                 type=discord.ActivityType.listening,
-                name=f"!help | {len(self.bot.users)} members in {guild_count} servers"))
+                name=f"!help | {len(self.bot.users)} members in {guild_count} servers and I'm still playing with Louis"))
+        
+        channel = self.bot.get_channel(878503565369442375)
+        mymsg = await channel.fetch_message(878506421484945479)
+        guilds = self.bot.guilds
+        guild_count = 0
+        member_count = 0
+        for guild in guilds:
+            guild_count += 1
+            for member in guild.members:
+                member_count += 1
+        embed=discord.Embed(title="Stats of the Chad Bot(Me!)",color=discord.Color.random())
+        embed.add_field(name="Servers",value=len(self.bot.guilds),inline=False)
+        embed.add_field(name="Unique users",value=len(self.bot.users),inline=False)
+        embed.add_field(name="Total users(contains common members)",value=member_count,inline=False)
+        await mymsg.edit(embed=embed)
         db = TinyDB('databases/pings.json')
         query = Query()
 
@@ -55,23 +76,20 @@ class events(commands.Cog):
         print('.....')
         self.myLoop.start()
         DiscordComponents(self.bot)
-        guilds = self.bot.guilds
-        guild_count = 0
-        member_count = 0
-        for guild in guilds:
-            guild_count += 1
-            for member in guild.members:
-                member_count += 1
-
         await self.bot.change_presence(
             status=discord.Status.idle,
             activity=discord.Activity(
                 type=discord.ActivityType.listening,
-                name=f"!help | {len(self.bot.users)} members in {guild_count} servers"))
-
-
-    
-
+                name=f"!help | {len(self.bot.users)} members in {len(self.bot.guilds)} servers and I'm still playing with Louis"))
+   
+    @commands.Cog.listener()
+    async def on_message(self,message):
+        if message.content=="<@!864010316424806451>":
+            prefix=await self.bot.get_prefix(message)
+            prefix="".join(prefix)
+            embed=discord.Embed(title="I have been summoned!!",color=discord.Color.random(),description=f"My prefix on this server is `{prefix}`\n Simply do `{prefix}help` to see all my commands!\n(If there are too many '!'s then blame me not...)")
+            embed.set_footer(text='I was chilling until you disturbed me :(')
+            await message.channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_member_join(self,member):
@@ -147,13 +165,12 @@ class events(commands.Cog):
 
 
     @commands.Cog.listener()
-    async def on_guild_join(self,guild):
+    async def on_guild_join(self, guild):
         db1 = TinyDB('databases/lockdown.json')
         db1.insert({'guild': guild.id, 'unaffected_channels': [], 'state': False})
         db2 = TinyDB('databases/pings.json')
         guild_id_var = guild.id
         db2.insert({'guild_id': str(guild_id_var), 'pingstate': True})
-
         count = 0
         for member in guild.members:
             count += 1
@@ -166,6 +183,8 @@ class events(commands.Cog):
         channel = a.get_channel(869447409237897256)
         embed.set_footer(text=f"Chad is currently in {len(self.bot.guilds)} servers")
         await channel.send(embed=embed)
+
+        
 
 
 
@@ -188,18 +207,21 @@ class events(commands.Cog):
         db5 = TinyDB('databases/pings.json')
         db5q = Query()
         db5.remove(db5q.guild_id == guild.id)
-        embed = discord.Embed(title="Guild leave",
-                              description=guild.name,
-                              color=0xFF0000)
+        
         count = 0
         for x in guild.members:
             count += 1
-
+            
+        embed = discord.Embed(title="Guild leave",
+                              description=guild.name,
+                              color=0xFF0000)
         embed.add_field(name=f"Members", value=count)
         embed.add_field(name=f"Owner", value=guild.owner)
         a = self.bot.get_guild(869173101131337748)
         channel = a.get_channel(869447409237897256)
         await channel.send(embed=embed)
+
+        
 
 
 def setup(bot: commands.Bot):

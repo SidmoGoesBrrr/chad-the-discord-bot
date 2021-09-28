@@ -1,8 +1,11 @@
+
 import discord
 import asyncio
 from discord.ext import commands
+import calendar
 import time
-import datetime
+from tzlocal import get_localzone
+from datetime import datetime, timedelta
 import aiohttp
 from tinydb import TinyDB, Query
 def checkping(guild_id_var):
@@ -19,18 +22,17 @@ class Utils(commands.Cog):
         self.bot.sniped_messages = {}
 
 
-    @commands.command()
+    @commands.command(aliases=['p'])
     async def ping(self,ctx):
         """Get the bot's current websocket and API latency."""
         start_time = time.time()
-        message = await ctx.send(embed=discord.Embed(title="Testing Ping...",color=discord.Color.random()))
+        message = await ctx.send(embed=discord.Embed(title="Testing Ping...", color=discord.Color.random()))
         end_time = time.time()
 
-        await message.edit(embed=discord.Embed(title=f"Latency: {round(self.bot.latency * 1000)}ms\nAPI: {round((end_time - start_time) * 1000)}ms",color=discord.Color.random()))
+        await message.edit(embed=discord.Embed(title=f"Latency: {round(self.bot.latency * 1000)}ms\nAPI: {round((end_time - start_time) * 1000)}ms", color=discord.Color.random()))
     
       
-    
-    @commands.command()
+    @commands.command(aliases=['maker', 'mrole', 'mr'])
     async def makerole(self,ctx, *, rolename):
         color = discord.Color.random()
         if ctx.author.guild_permissions.manage_roles:
@@ -50,7 +52,7 @@ class Utils(commands.Cog):
                                     color=color))
 
 
-    @commands.command()
+    @commands.command(aliases=['addr', 'arole', 'ar'])
     async def addrole(self,ctx, member: discord.Member, *, role: discord.Role = None):
         if ctx.author.guild_permissions.manage_roles:
             embed = discord.Embed(
@@ -68,7 +70,7 @@ class Utils(commands.Cog):
                                     color=discord.Color.green()))
 
 
-    @commands.command()
+    @commands.command(aliases=['editr', 'erole', 'er'])
     async def editrole(self,ctx, from_role: discord.Role, *, to_role):
         if ctx.author.guild_permissions.manage_roles:
             guild = ctx.guild
@@ -91,7 +93,7 @@ class Utils(commands.Cog):
                                     color=discord.Color.green()))
 
 
-    @commands.command()
+    @commands.command(aliases=['remover', 'rrole', 'rr'])
     async def removerole(self,ctx, member: discord.Member, *, role: discord.Role = None):
         if ctx.author.guild_permissions.manage_roles:
             embed = discord.Embed(
@@ -109,7 +111,7 @@ class Utils(commands.Cog):
                                     color=discord.Color.green()))
 
 
-    @commands.command()
+    @commands.command(aliases=['deleter', 'drole', 'dr'])
     async def deleterole(self,ctx, rolename: discord.Role):
         if ctx.author.guild_permissions.manage_roles:
             await rolename.delete()
@@ -124,56 +126,52 @@ class Utils(commands.Cog):
                 embed=discord.Embed(title="Stop right there!",
                                     description="You require the Manage Roles permission.",
                                     color=discord.Color.green()))
+    
 
-        
-    @commands.command()
+    @commands.command(aliases=['user', 'uinfo', 'ui'])
     async def userinfo(self,ctx, target: discord.Member):
-        if ctx.author.guild_permissions.administrator:
-            x = ctx.guild.members
-            if target in x:
-                roles = [role for role in target.roles if role != ctx.guild.default_role]
-                if roles == []:
-                    roles = None
-                embed = discord.Embed(title="User information", colour=discord.Color.gold(),
-                                    timestamp=datetime.datetime.utcnow())
+        x = ctx.guild.members
+        if target in x:
+            roles = [role for role in target.roles if role != ctx.guild.default_role]
+            if roles == []:
+                roles = None
+            embed = discord.Embed(title="User information", color=discord.Color.gold(),
+                                timestamp=datetime.utcnow())
 
-                embed.set_author(name=target.name, icon_url=target.avatar_url)
+            embed.set_author(name=target.name, icon_url=target.avatar_url)
 
-                embed.set_thumbnail(url=target.avatar_url)
+            embed.set_thumbnail(url=target.avatar_url)
 
-                embed.set_footer(text=f"Requested by {ctx.author.display_name}",
-                                icon_url=ctx.author.avatar_url)
+            embed.set_footer(text=f"Requested by {ctx.author.display_name}",
+                            icon_url=ctx.author.avatar_url)
 
-                if roles is None:
-                    fields = [("Name", str(target), False),
-                            ("ID", target.id, False),
-                            ("Status", str(target.status).title(), False),
-                            (f"Roles", "No roles", False),
-                            ("Created at", target.created_at.strftime("%d/%m/%Y %H:%M:%S"), False),
-                            ("Joined at", target.joined_at.strftime("%d/%m/%Y %H:%M:%S"), False)]
+            if roles is None:
+                fields = [("Name", str(target), False),
+                        ("ID", target.id, False),
+                        ("Status", str(target.status).title(), False),
+                        (f"Roles", "No roles", False),
+                        ("Created at", target.created_at.strftime("%d/%m/%Y %H:%M:%S") + " UTC", False),
+                        ("Joined at", target.joined_at.strftime("%d/%m/%Y %H:%M:%S") + " UTC", False)]
 
-                else:
-                    fields = [("Name", str(target), False),
-                            ("ID", target.id, False),
-                            ("Status", str(target.status).title(), False),
-                            (f"Roles ({len(roles)})", " ".join([role.mention for role in roles]), False),
-                            ("Created at", target.created_at.strftime("%d/%m/%Y %H:%M:%S"), False),
-                            ("Joined at", target.joined_at.strftime("%d/%m/%Y %H:%M:%S"), False)]
-
-                for name, value, inline in fields:
-                    embed.add_field(name=name, value=value, inline=inline)
-                await ctx.send(embed=embed)
             else:
-                await ctx.send(f'You have to ping someone from this server')
-        else:
-            await ctx.send(
-                embed=discord.Embed(title="Stop right there!", description="You require to be an admin!",
-                                    color=discord.Color.red()))
+                fields = [("Name", str(target), False),
+                        ("ID", target.id, False),
+                        ("Status", str(target.status).title(), False),
+                        (f"Roles ({len(roles)})", " ".join([role.mention for role in roles]), False),
+                        ("Created at", target.created_at.strftime("%d/%m/%Y %H:%M:%S")+" UTC", False),
+                   ("Joined at", target.joined_at.strftime("%d/%m/%Y %H:%M:%S")+" UTC", False)]
 
-    @commands.command()
+            for name, value, inline in fields:
+                embed.add_field(name=name, value=value, inline=inline)
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send(f'You have to ping someone from this server and this server only')
+        
+
+    @commands.command(aliases=['server', 'sinfo', 'si'])
     @commands.guild_only()
     async def serverinfo(self,ctx):
-        format = "%a, %d %b %Y | %H:%M:%S %ZGMT"
+        format = "%a, %d %b %Y | %H:%M:%S %UTC"
         embed = discord.Embed(
             color=ctx.guild.owner.top_role.color
         )
@@ -186,9 +184,8 @@ class Utils(commands.Cog):
                         value=f":white_small_square: ID: **{ctx.guild.id}** \n:white_small_square: Owner: **{ctx.guild.owner}** \n:white_small_square: Location: **{str(ctx.guild.region).capitalize()}** \n:white_small_square: Creation: **{ctx.guild.created_at.strftime(format)}** \n:white_small_square: Members: **{ctx.guild.member_count}** \n:white_small_square: Channels: **{channels}** Channels; **{text_channels}** Text, **{voice_channels}** Voice, **{categories}** Categories \n:white_small_square: Verification: **{str(ctx.guild.verification_level).upper()}** \n:white_small_square: Features: {', '.join(f'**{x}**' for x in ctx.guild.features)} \n:white_small_square: Splash: {ctx.guild.splash}")
         await ctx.send(embed=embed)
 
-    
-    @commands.command()
-    async def robmoji(self,ctx, emoji: discord.PartialEmoji, *, Name=None):
+    @commands.command(aliases=['robemoji', 'remoji', 'robmo', 'rm'])
+    async def robmoji(self, ctx, emoji: discord.PartialEmoji, *, Name=None):
         if ctx.author.guild_permissions.manage_emojis:
             emoji_url=emoji.url
             if Name is None:
@@ -207,44 +204,81 @@ class Utils(commands.Cog):
                                         color=discord.Color.red()))
 
     
-    @commands.command()
-    async def nick(self,ctx, member: discord.Member, *, nick=None):
-        if ctx.author.guild_permissions.manage_nicknames:
-            if nick is None:
-                await member.edit(nick=member.name)
-                embed = discord.Embed(title=f"Nickname removed from {member.name}",
-                                    description=f"His name has been changed back to {member.name}",
-                                    color=discord.Color.red())
+    @commands.command(aliases=['n'])
+    async def nick(self, ctx, member=None, *, nick=None):
+        if member is None and nick is None:
+            if ctx.author.guild_permissions.change_nickname:
+                await ctx.author.edit(nick=None)
+                embed = discord.Embed(title=f"Your nickname has been removed",
+                                              description=f"Your name is now displayed as {ctx.author.display_name}",
+                                              color=discord.Color.red())
                 await ctx.send(embed=embed)
+                return
+            else:
+                await ctx.send(
+                embed=discord.Embed(title="I refuse", description="You require the change nickname permission.",
+                                    color=discord.Color.red()))
+                return
 
-            elif len(nick) > 32:
-                embed = discord.Embed(title=f"That nickname is TOO LONG",
+        if member != None:
+            if '@' in member:
+              member = await commands.MemberConverter().convert(ctx, member)
+
+        if isinstance(member, str) or (isinstance(member, discord.Member) and ctx.author == member):
+            if ctx.author.guild_permissions.change_nickname:
+                if type(member) is not discord.Member:
+                  if nick is None:
+                      nick = str(member)
+                  else:
+                      nick = str(member) + " " + nick
+                if len(nick) > 48:
+                    embed = discord.Embed(title=f"That nickname is TOO LONG",
                                     description=f" I'd probably get bored changing it.\nTry a nickname that has less then 32 characters.",
                                     color=discord.Color.red())
+                    await ctx.send(embed=embed)
+                    return
+                await ctx.author.edit(nick=nick)
+                embed = discord.Embed(title=f"Your nickname has been changed",
+                                          description=f"Your name is now displayed as {ctx.author.display_name}",
+                                          color=discord.Color.red())
                 await ctx.send(embed=embed)
-
-            elif ctx.author == member:      
-                nickname_from = member.nick
-                await member.edit(nick=nick)
-                embed = discord.Embed(title=f"Your nickname has been changed to {member.nick}", description=f"Nice nickname, btw.", color=discord.Color.random())
-                await ctx.send(embed=embed)
-
+                return
             else:
+                await ctx.send(
+                embed=discord.Embed(title="I refuse", description="You require the change nickname permission.",
+                                    color=discord.Color.red()))
+                return
+
+        elif isinstance(member, discord.Member):
+            if ctx.author.guild_permissions.manage_nicknames:
+                if nick is None:
+                    await member.edit(nick=member.name)
+                    embed = discord.Embed(title=f"Nickname removed for {member.name}",
+                                          description=f"Their name is now displayed as {member.display_name}",
+                                          color=discord.Color.red())
+                    await ctx.send(embed=embed)
+                    return
+
+                elif len(nick) > 48:
+                    embed = discord.Embed(title=f"That nickname is TOO LONG",
+                                    description=f" I'd probably get bored changing it.\nTry a nickname that has less then 48 characters.",
+                                    color=discord.Color.red())
+                    await ctx.send(embed=embed)
+                    return
+
                 await member.edit(nick=nick)
                 embed = discord.Embed(title=f"Nickname changed for {member.name}",
-                                    description=f" Their nickname changed to {member.nick}",
-                                    color=discord.Color.random())
+                                          description=f"Their name is now displayed as {member.display_name}",
+                                          color=discord.Color.red())
                 await ctx.send(embed=embed)
-    
-        elif ctx.author == member:
-            await member.edit(nick=nick)
-            embed = discord.Embed(title=f"You nickname has been changed to {member.nick}", description=f"But don't even think of changing other people's nicknames...", color=discord.Color.random())
-            await ctx.send(embed=embed)
+                return
 
-        else:
-            await ctx.send(
-                embed=discord.Embed(title="I refuse", description="You require the manage nicknames permission.",
-                                    color=discord.Color.red())) 
+            else:
+                await ctx.send(
+                    embed=discord.Embed(title="I refuse", description="You require the manage nicknames permission.",
+                                        color=discord.Color.red()))
+
+     
 
         
     @commands.command()
@@ -261,7 +295,7 @@ class Utils(commands.Cog):
             embed = discord.Embed(title="I'm sorry.",
                                 description="I got bored reading your LONG reason.\nSo I ignored it.",
                                 color=discord.Color.random())
-            embed.set_footer(text="Nothing more then 30 characters please")
+            embed.set_footer(text="Nothing more than 30 characters please")
             await ctx.send(embed=embed)
             return
 
@@ -272,10 +306,10 @@ class Utils(commands.Cog):
                                         description=f"I have set your status as afk for {reason}.",
                                         color=discord.Color.random()))
 
-    
+
     @commands.command(aliases=['remind'])
-    async def reminder(self,ctx, time, *, reminder):
-        embed = discord.Embed(color=0x55a7f7, timestamp=datetime.datetime.utcnow())
+    async def reminder(self, ctx, time, *, reminder):
+        embed = discord.Embed(color=0x55a7f7, timestamp=datetime.utcnow())
         seconds = 0
         if reminder is None:
             embed.add_field(name='Warning', value='Please specify what do you want me to remind you about.')
@@ -298,30 +332,54 @@ class Utils(commands.Cog):
 
         elif seconds < 120:
             embed.add_field(name='Warning',
-                            value='You have specified a too short duration!\nMinimum duration is 2 minutes.')
+                            value='You have specified too short a duration!\nMinimum duration is 2 minutes.')
 
         elif seconds > 7776000:
-            embed.add_field(name='Warning', value='You have specified a too long duration!\nMaximum duration is 90 days.')
+            embed.add_field(name='Warning', value='You have specified too long a duration!\nMaximum duration is 90 days.')
 
         else:
             await ctx.send(embed=discord.Embed(title=f"I wish I had a title for this embed",
                                             description=f"But I will remind you about {reminder} in {counter}.",
                                             color=discord.Color.random()))
             await asyncio.sleep(seconds)
-            await ctx.send(f"{ctx.author.mention} Hi, you asked me to remind you \"{reminder}\" {counter} ago.")
+            await ctx.send(f"{ctx.author.mention} Hi, you asked me to remind you to \"{reminder}\" {counter} ago.")
             return
 
         await ctx.send(embed=embed)
 
-    
-    @commands.command()
+    @commands.command(aliases=['sf'])
+    async def snowflake(self, ctx, id: int):
+        def utc_to_local(utc_dt):
+            timestamp = calendar.timegm(utc_dt.timetuple())
+            local_dt = datetime.fromtimestamp(timestamp, tz=get_localzone())
+            print(local_dt)
+            assert utc_dt.resolution >= timedelta(microseconds=1)
+            return local_dt.replace(microsecond=utc_dt.microsecond)
+        utc_dt = discord.utils.snowflake_time(id)
+        local_dt = utc_to_local(utc_dt=utc_dt)
+        def suffix(d):
+            return 'th' if 11 <= d <= 13 else {1: 'st', 2: 'nd', 3: 'rd'}.get(d % 10, 'th')
+
+        def custom_strftime(format, t):
+            return t.strftime(format).replace('{S}', str(t.day) + suffix(t.day))
+
+        utc_dt = custom_strftime("%a, {S} %b, %Y \|| %I:%M:%S %p", utc_dt)
+        local_dt = custom_strftime("%a, {S} %b, %Y \|| %I:%M:%S %p", local_dt)
+        print(utc_dt)
+        print(local_dt)
+        await ctx.send(embed=discord.Embed(title=f"ID {id}",
+                                          description=f"Was created on {utc_dt} UTC and\non {local_dt} in your local time.",
+                                          color=discord.Color.random()))
+
+
+    @commands.command(aliases=['ab'])
     async def about(self,ctx):
         about_embed = discord.Embed(title="About ME!", color=discord.Color.green())
         about_embed.add_field(name="Bot Developed by:", value=f"ZeroAndOne, [My epic devs!](https://zeroandone.ml)")
         about_embed.add_field(name="Created to:", value=f"Make discord a better place. :angel:")
         about_embed.add_field(name="Features:", value=f"Use !help", inline=True)
         about_embed.add_field(name="Give me feedback and complains here. Help me improve myself!\nAlso useful for finding out about the latest Chad updates!!",
-                            value=f"[Support Server](https://discord.gg/5ABvVwKGCF)", inline=True)
+                            value=f"[Support Server](https://discord.gg/wTsj4DZhyZ)", inline=True)
         about_embed.add_field(name="Vote for me and make me POPULAR!!",value=f"[I'm on top.gg](https://top.gg/bot/864010316424806451/vote)", inline=True)
         user = self.bot.get_user(864010316424806451)
         about_embed.add_field(name="Vote for me here too!",value=f"[I'm on the Discord Bot List](https://discordbotlist.com/bots/chad-6621/upvote)", inline=True)
@@ -329,7 +387,7 @@ class Utils(commands.Cog):
         await ctx.send(embed=about_embed)
 
 
-    @commands.command()
+    @commands.command(aliases=['v'])
     async def vote(self,ctx):
         vote = discord.Embed(title="Vote for me buckaroo!",color=discord.Color.random())
         vote.add_field(name="1",value = f"[top.gg](https://top.gg/bot/864010316424806451/vote)")
@@ -338,31 +396,12 @@ class Utils(commands.Cog):
         await ctx.send(embed=vote)
 
 
-
-    
-
-
     @commands.Cog.listener()
     async def on_message_delete(self,message):
         self.bot.sniped_messages[message.guild.id] = (message.content, message.author, message.channel.name, message.created_at)
 
-    @commands.command()
-    async def snipe(self,ctx):
-        try:
-            contents, author, channel_name, time = self.bot.sniped_messages[ctx.guild.id]
-            
-        except:
-            await ctx.channel.send("Couldn't find a message to snipe!")
-            return
-
-        embed = discord.Embed(description=contents, color=discord.Color.random(), timestamp=time)
-        embed.set_author(name=f"{author.name}#{author.discriminator}", icon_url=author.avatar_url)
-        embed.set_footer(text=f"Deleted in : #{channel_name}")
-
-        await ctx.channel.send(embed=embed)
-
         
-    @commands.command()
+    @commands.command(aliases=['inv'])
     async def invite(self,ctx):
         embed = discord.Embed(
             title="Invite",
@@ -373,25 +412,53 @@ class Utils(commands.Cog):
         embed.color = discord.Color.green()
         await ctx.send(embed=embed)
 
-    @commands.command()
+
+    @commands.command(aliases=['sup'])
     async def support(self,ctx):
         embed = discord.Embed(title="Support Server",
-                            description="To visit our support server, click [here](https://discord.gg/EmvXgYyV).\nNow you can complain all you want!!",
+                            description="To visit our support server, click [here](https://discord.gg/wTsj4DZhyZ).\nNow you can complain all you want!!",
                             color=discord.Color.random())
+        embed.set_footer(text=f"Support Server requested by {ctx.author.name}")
         embed.set_thumbnail(url=ctx.author.avatar_url)
         await ctx.send(embed=embed)
 
-    
 
 
-    @commands.command()
-    async def website(self,ctx):
+    @commands.command(aliases=['web', 'site', 'www', 'zo'])
+    async def website(self, ctx):
         embed = discord.Embed(title="Link for our website",
                             color=discord.Color.dark_magenta(),
-                            description="This is our main [website](https://zeroandone.ml)\nClick [here](https://www.youtube.com/channel/UCF0DZYNiHcIGZKBoPWfc0lg) to see our YouTube Channel.")
+                            description="This is our main [website](https://zeroandone.netlify.app/)\nClick [here](https://www.youtube.com/channel/UCF0DZYNiHcIGZKBoPWfc0lg) to see our YouTube Channel.")
         embed.set_footer(text=f"Website requested by {ctx.author.name}")
         embed.set_thumbnail(url=ctx.author.avatar_url)
         await ctx.send(embed=embed)
+
+    @commands.command(aliases=['pat', 'donate'])
+    async def patreon(self,ctx):
+        embed = discord.Embed(title="Here is our patreon.",
+                            description="Donate to us [here](https://www.patreon.com/TheChadBot) to show your love for Chad!",
+                            color=discord.Color.random())
+        embed.set_footer(text=f"Patreon requested by {ctx.author.name}")
+        embed.set_thumbnail(url=ctx.author.avatar_url)
+        await ctx.send(embed=embed)
+        
+
+
+    @commands.command(aliases=['sn'])
+    async def snipe(self, ctx):
+        try:
+            contents, author, channel_name, time = self.bot.sniped_messages[ctx.guild.id]
+            
+        except:
+            await ctx.send(embed=discord.Embed(title="Couldn't find a message to snipe!", color=discord.Color.random()))
+            return
+
+        embed = discord.Embed(description=contents, color=discord.Color.random(), timestamp=time)
+        embed.set_author(name=f"{author.name}#{author.discriminator}", icon_url=author.avatar_url)
+        embed.set_footer(text=f"Deleted in : #{channel_name}")
+
+        await ctx.channel.send(embed=embed)
+
 
     @robmoji.error
     async def rob_moji_error(self,ctx,error):
@@ -423,6 +490,7 @@ class Utils(commands.Cog):
 
         else:
             raise (error)
+            
     @userinfo.error
     async def userinfo_error(self,ctx,error):
         member = ctx.author
@@ -611,23 +679,7 @@ class Utils(commands.Cog):
 
     @nick.error
     async def nick_error(self,ctx,error):
-        member = ctx.author
-        from discord import errors
-        if isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(title=f"What are you playing at?",
-                                description=f"Stop giving me half the info I need\nYou must tell me both, the User and his new nickname.",
-                                color=discord.Color.random())
-            embed.set_footer(text="Its not really that hard you know...")
-            await ctx.send(embed=embed)
-
-        elif isinstance(error, commands.MemberNotFound):
-            embed = discord.Embed(title=f"People say they hate their job",
-                                description=f"I say my jobs easy.\nChanging nicknames of non-existent users.",
-                                color=discord.Color.random())
-            embed.set_footer(text="Now all I need is payment...")
-            await ctx.send(embed=embed)
-
-        elif isinstance(error, commands.errors.CommandInvokeError):
+        if isinstance(error, commands.errors.CommandInvokeError):
             embed = discord.Embed(title=f"Nope, the member is more powerful than me",
                                 description=f"Maybe put my role above him :pleading_face:",
                                 color=discord.Color.random())
@@ -650,7 +702,15 @@ class Utils(commands.Cog):
         else:
             raise (error)
   
+    @snowflake.error
+    async def snowflake_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            await ctx.send(embed=discord.Embed(title="The given ID **NOTHING**",
+                                              description="Was never created.",
+                                              color=discord.Color.random()))
 
+        else:
+            raise (error)
     
 def setup(bot):
     bot.add_cog(Utils(bot))

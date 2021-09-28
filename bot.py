@@ -9,27 +9,27 @@ import time
 import discord
 import urbandict
 from discord.utils import get
-import discord
 from discord.ext import commands, tasks
 import random
 import os
 import requests
 import re
 import datetime
-from PIL import Image
-from PIL import ImageFont
-from PIL import ImageDraw
+from PIL import Image, ImageFont, ImageDraw
 import math
 from io import BytesIO
 from tinydb import TinyDB, Query
-from keep_alive import keep_alive
 from discord.ext.commands import MissingPermissions
 from pprint import pprint
 import typing
 from discord.ext.commands import cooldown, BucketType
+from dotenv import load_dotenv
+import topgg
 
-intents = discord.Intents().all()
 
+load_dotenv()
+intents = discord.Intents.default()
+intents.members = True
 
 async def determine_prefix(bot, message):
     if message.guild:
@@ -49,16 +49,17 @@ async def determine_prefix(bot, message):
 
 bot = commands.Bot(command_prefix=determine_prefix, intents=intents)
 bot.remove_command('help')
-startup_extensions = ['fun', 'errors', 'games', 'help', 'info', 'moderation', 'settings', 'utils','events']
+for filename in os.listdir('./cogs'):
+    if filename.endswith('.py'):
+        try:
+            bot.load_extension(f"cogs.{filename[:-3]}")
 
-for extension in startup_extensions:
-    try:
-        bot.load_extension(f"cogs.{extension}")
-    except Exception as e:
-        exec = "{} : {}".format(extension, e)
-        print(exec)
-
-#bot.load_extension("cogs.errors")
+        except commands.ExtensionError as e:
+            print(f'{e.__class__.__name__}: {e}')
+            
+bot.load_extension("uptime")
+dbl_token = os.getenv(dbl_token)
+bot.topggpy = topgg.DBLClient(bot, dbl_token, autopost=True)
 
 @bot.event
 async def on_message(message):
@@ -86,14 +87,14 @@ async def on_message(message):
                     map(lambda entry: entry["reason"],
                         db2.search(query['afk_user'] == member.id)))[0])
             await message.channel.send(
-                embed=discord.Embed(title=f"{member.name} is currently afk",
+                embed=discord.Embed(title=f"{member.display_name} is currently afk",
                                     description=f"Afk note is: {value}",
                                     color=discord.Color.random()))
 
     member = message.author
     if db2.search(query['afk_user'] == member.id):
         await message.channel.send(embed=discord.Embed(
-            title=f"{member.name} You typed a message!",
+            title=f"{member.display_name} You typed a message!",
             description=f"That means you ain't afk!\nWelcome back buddy.",
             color=discord.Color.random()))
 
@@ -101,82 +102,181 @@ async def on_message(message):
         db2.remove(query.afk_user == member.id)
     await bot.process_commands(message=message)
 
-time_regex = re.compile(r"(\d{1,5}(?:[.,]?\d{1,5})?)([smhd])")
-time_dict = {"h": 3600, "s": 1, "m": 60, "d": 86400}
-
-
-class TimeConverter(commands.Converter):
-    async def convert(self, ctx, argument):
-        matches = time_regex.findall(argument.lower())
-        time = 0
-        for v, k in matches:
-            try:
-                time += time_dict[k] * float(v)
-            except KeyError:
-                raise commands.BadArgument(
-                    "{} is an invalid time-key! h/m/s/d are valid!".format(k))
-            except ValueError:
-                raise commands.BadArgument("{} is not a number!".format(v))
-        return time
-
-
-def checkping(guild_id_var):
-    db = TinyDB('databases/pings.json')
-    query = Query()
-    values = str(list(map(lambda entry: entry["pingstate"],
-                          db.search(query.guild_id == str(guild_id_var))))[0])
-
-    return values.lower()
-
 
 @bot.command()
 async def load(ctx, *, module):
-    """Loads a module."""
-    if ctx.author.id == 815555652780294175 or ctx.author.id == 815555652780294175:
+    """loads a module."""
+    if ctx.author.id == 815555652780294175 or ctx.author.id == 723032217504186389:
+        if ctx.author.id == 815555652780294175:
+            author = "Mr One"
+
+        elif ctx.author.id == 723032217504186389:
+            author = "Mr Zero"
+
         try:
             bot.load_extension(f"cogs.{module}")
         except commands.ExtensionError as e:
-            await ctx.send(f'{e.__class__.__name__}: {e}')
+            await ctx.send(embed=discord.Embed(title="Oof Buddy, there is an error <a:zo_cri:886222278331867187>", description=f'{e.__class__.__name__}: {e}', color=discord.Color.random()))
         else:
-            await ctx.send('\N{OK HAND SIGN}')
+            embed1 = discord.Embed(title=f"Alright {author}. Loaded {module}.py with no errors",
+                                   description=f"<a:zo_thumbs_up:886219697694081045>", color=discord.Color.random())
+            await ctx.send(embed=embed1)
 
     else:
-        await ctx.send("Who do you think you are huh?\n Definately not the owner")
+        await ctx.send(embed=discord.Embed(title="Nope you imposter", description="I dont take orders from peasants like you <a:ZOWumpusTongue:865559251764903946>", color=discord.Color.random()))
 
 
 @bot.command()
 async def unload(ctx, *, module):
     """Unloads a module."""
-    if ctx.author.id == 815555652780294175 or ctx.author.id == 815555652780294175:
+    if ctx.author.id == 815555652780294175 or ctx.author.id == 723032217504186389:
+        if ctx.author.id == 815555652780294175:
+            author = "Mr One"
+
+        elif ctx.author.id == 723032217504186389:
+            author = "Mr Zero"
+
         try:
             bot.unload_extension(f"cogs.{module}")
         except commands.ExtensionError as e:
-            await ctx.send(f'{e.__class__.__name__}: {e}')
+            await ctx.send(embed=discord.Embed(title="Oof Buddy, there is an error <a:zo_cri:886222278331867187>", description=f'{e.__class__.__name__}: {e}', color=discord.Color.random()))
         else:
-            await ctx.send('\N{OK HAND SIGN}')
+            embed1 = discord.Embed(title=f"Alright {author}. Unloaded {module}.py with no errors",
+                                   description=f"<a:zo_thumbs_up:886219697694081045>", color=discord.Color.random())
+            await ctx.send(embed=embed1)
 
     else:
-        await ctx.send("Who do you think you are huh?\n Definately not the owner")
+        await ctx.send(embed=discord.Embed(title="Nope you imposter", description="I dont take orders from peasants like you <a:ZOWumpusTongue:865559251764903946>", color=discord.Color.random()))
 
 
 @bot.command()
 async def reload(ctx, *, module):
+    """reloads a module."""
     if ctx.author.id == 815555652780294175 or ctx.author.id == 723032217504186389:
+        if ctx.author.id == 815555652780294175:
+            author = "Mr One"
+
+        elif ctx.author.id == 723032217504186389:
+            author = "Mr Zero"
+
         try:
             bot.reload_extension(f"cogs.{module}")
         except commands.ExtensionError as e:
-            await ctx.send(f'{e.__class__.__name__}: {e}')
+            await ctx.send(embed=discord.Embed(title="Oof Buddy, there is an error<a:zo_cri:886222278331867187>", description=f'{e.__class__.__name__}: {e}', color=discord.Color.random()))
         else:
-            await ctx.send('\N{OK HAND SIGN}')
+            embed1 = discord.Embed(title=f"Alright {author}. Reloaded {module}.py with no errors",
+                                   description=f"<a:zo_thumbs_up:886219697694081045>", color=discord.Color.random())
+            await ctx.send(embed=embed1)
 
     else:
-        await ctx.send("Who do you think you are huh?\n Definately not the owner")
+        await ctx.send(embed=discord.Embed(title="Nope you imposter", description="I dont take orders from peasants like you <a:ZOWumpusTongue:865559251764903946>", color=discord.Color.random()))
 
+
+@bot.command(aliases=["reloadall", "reloadcogs"])
+async def massreload(ctx):
+    if ctx.author.id == 815555652780294175 or ctx.author.id == 723032217504186389:
+        if ctx.author.id == 815555652780294175:
+            author = "Mr One"
+
+        elif ctx.author.id == 723032217504186389:
+            author = "Mr Zero"
+
+        for filename in os.listdir('./cogs'):
+            if filename.endswith('.py'):
+                await ctx.send(f"Reloading {filename[:-3]}")
+                await asyncio.sleep(1)
+                try:
+                    bot.reload_extension(f"cogs.{filename[:-3]}")
+                    await ctx.send(f"Done Reloading {filename[:-3]}, now moving on to the next one")
+
+                except commands.ExtensionError as e:
+                    await ctx.send(embed=discord.Embed(title="Oof Buddy, there is an error <a:zo_cri:886222278331867187>", description=f'{e.__class__.__name__}: {e}', color=discord.Color.random()))
+            
+    else:
+        await ctx.send(embed=discord.Embed(title="Nope you imposter", description="I dont take orders from peasants like you <a:ZOWumpusTongue:865559251764903946>", color=discord.Color.random()))
+
+@bot.command(aliases=["unloadall", "unloadcogs"])
+async def massunload(ctx):
+    if ctx.author.id == 815555652780294175 or ctx.author.id == 723032217504186389:
+        if ctx.author.id == 815555652780294175:
+            author = "Mr One"
+
+        elif ctx.author.id == 723032217504186389:
+            author = "Mr Zero"
+            
+        for filename in os.listdir('./cogs'):
+            if filename.endswith('.py'): 
+                await ctx.send(f"Unloading {filename[:-3]}")
+                await asyncio.sleep(1)
+                try:
+                    bot.unload_extension(f"cogs.{filename[:-3]}")
+                    await ctx.send(f"Done Unloading {filename[:-3]}, now moving on to the next one")
+
+                except commands.ExtensionError as e:
+                    await ctx.send(embed=discord.Embed(title="Oof Buddy, there is an error<a:zo_cri:886222278331867187>", description=f'{e.__class__.__name__}: {e}', color=discord.Color.random()))
+
+@bot.command(aliases=["loadall", "loadcogs"])
+async def massload(ctx):
+    if ctx.author.id == 815555652780294175 or ctx.author.id == 723032217504186389:
+        if ctx.author.id == 815555652780294175:
+            author = "Mr One"
+
+        elif ctx.author.id == 723032217504186389:
+            author = "Mr Zero"
+            
+        for filename in os.listdir('./cogs'):
+            if filename.endswith('.py'):
+                await ctx.send(f"Loading {filename[:-3]}")
+                await asyncio.sleep(1)
+                try:
+                    bot.load_extension(f"cogs.{filename[:-3]}")
+                    await ctx.send(f"Done Loading {filename[:-3]}, now moving on to the next one")
+
+                except commands.ExtensionError as e:
+                    await ctx.send(embed=discord.Embed(title="Oof Buddy, there is an error <a:zo_cri:886222278331867187>", description=f'{e.__class__.__name__}: {e}', color=discord.Color.random()))
+
+
+    else:
+        await ctx.send(embed=discord.Embed(title="Nope you imposter", description="I dont take orders from peasants like you <a:ZOWumpusTongue:865559251764903946>", color=discord.Color.random()))
 
     
+@bot.command(aliases=["checkcogs"])
+async def checkcog(ctx):
+    if ctx.author.id == 815555652780294175 or ctx.author.id == 723032217504186389:
+        if ctx.author.id == 815555652780294175:
+            author = "Mr One"
+
+        elif ctx.author.id == 723032217504186389:
+            author = "Mr Zero"
+        
+        all_cogs=[]
+        loaded_cogs=[]
+        for filename in os.listdir('./cogs'):
+
+            if filename.endswith('.py'):
+                print(filename[:-3])
+                all_cogs.append(filename[:-3])
+                
+        await ctx.send(f"Hey {author} All cogs are [{', '.join(all_cogs)}]")
+
+        for i in all_cogs:
+            try:
+                bot.load_extension(f"cogs.{i}")
+                await ctx.send(f"{i} wasn't loaded")
+                await asyncio.sleep(1)
+                bot.unload_extension(f"cogs.{i}")
+            except commands.ExtensionAlreadyLoaded:
+                loaded_cogs.append(i)
+
+        await ctx.send(f"Hey {author} All loaded cogs are [{', '.join(loaded_cogs)}]")
+    else:
+        await ctx.send(embed=discord.Embed(title="Nope you imposter", description="I dont take orders from peasants like you <a:ZOWumpusTongue:865559251764903946>", color=discord.Color.random()))
 
 
-keep_alive()  # Starts a webserver to be pinged.
-token = os.environ.get("DISCORD_BOT_SECRET")
-# Starts the bot
+
+@bot.event
+async def on_autopost_success():
+    print(f"Posted server count ({bot.topggpy.guild_count}))")
+      
+token = os.getenv("DISCORD_BOT_SECRET")
 bot.run(token)

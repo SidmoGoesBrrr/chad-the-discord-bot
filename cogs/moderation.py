@@ -35,7 +35,7 @@ class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
  
-    @commands.command()
+    @commands.command(aliases=['slomo', 'slowmo', 'sm', 'slo', 'smode'])
     async def slowmode(self,ctx, seconds: int):
         if ctx.author.guild_permissions.administrator:
             
@@ -43,7 +43,8 @@ class Moderation(commands.Cog):
                 await ctx.channel.edit(slowmode_delay=seconds)
                 embed = discord.Embed(
                     title="Slowmode Enabled!",
-                    description=f"There is a {seconds} seconds slowmode on this channel now."
+                    description=f"There is a {seconds} seconds slowmode on this channel now.",
+		    color=discord.Color.random()
                 )
             else:
                 embed = discord.Embed(title="Did you know?",
@@ -55,10 +56,10 @@ class Moderation(commands.Cog):
         else:
             await ctx.send(
                 embed=discord.Embed(title="Stop right there!", description="You require the Administrators permission.",
-                                    color=discord.Color.green()))
+                                    color=discord.Color.red()))
     
 
-    @commands.command()
+    @commands.command(aliases=['blist', 'blackl', 'bl'])
     async def blacklist(self,ctx, member: discord.Member):
         db = TinyDB('databases/blacklist.json')
         guild_id_var = ctx.guild.id
@@ -111,14 +112,16 @@ class Moderation(commands.Cog):
                                     color=discord.Color.red()))
 
 
-    @commands.command()
+    @commands.command(aliases=['unbl', 'ubl', 'unblackl', 'unblist', 'ublackl', 'ublist'])
     async def unblacklist(self,ctx, member: discord.Member):
         db = TinyDB('databases/blacklist.json')
         guild_id_var = ctx.guild.id
         if ctx.author.guild_permissions.administrator or ctx.author.id == 815555652780294175 or \
                 ctx.author.id == 723032217504186389:
             if not member:
-                await ctx.send("Please provide a member to unblacklist")
+                embed=discord.Embed(title="Please provide-", description="a member to unblacklist!",color=discord.Color.random())
+                embed.set_footer("I mean, seriously... isn't this obvious?")
+                await ctx.send(embed=embed)
                 return
             query = Query()
             try:
@@ -141,26 +144,27 @@ class Moderation(commands.Cog):
                                     color=discord.Color.red()))
 
 
-    @commands.command()
+    @commands.command(aliases=['cl'])
     async def clear(self,ctx, times: int, hide=None):
         if ctx.author.guild_permissions.manage_messages:
             if hide is None:
                 await ctx.channel.purge(limit=times + 1)
-                await ctx.send(embed=discord.Embed(title=f"{times} messages deleted"))
+                await ctx.send(embed=discord.Embed(title=f"{times} messages deleted", color=discord.Color.random()))
             elif hide == 'hide':
                 await ctx.channel.purge(limit=times + 1)
                 print('Pog')
             else:
-                await ctx.send(embed=discord.Embed(title=f"Oops! Wrong Command... :sweat_smile:"))
+              await ctx.send(embed=discord.Embed(title="Ok, ima ignore that.",
+              description="You tatally just didn't try to use that feature...",
+              color=discord.Color.random()))
 
         else:
             await ctx.send(
                 embed=discord.Embed(title="Stop right there!", description="You require the Manage Messages permission.",
-                                    color=discord.Color.green()))
-
+                color=discord.Color.green()))
 
     @commands.command()
-    async def warn(self,ctx, member: discord.Member, *, reason: str):
+    async def warn(self, ctx, member: discord.Member, *, reason: str):
         db = TinyDB('databases/warnings.json')
         guild_id_var = ctx.guild.id
         if ctx.author != member:
@@ -197,7 +201,7 @@ class Moderation(commands.Cog):
                                             color=discord.Color.random()))
 
 
-    @commands.command()
+    @commands.command(aliases=['warnings','warning','userw', 'uwarn', 'uw'])
     async def userwarn(self,ctx, member: discord.Member):
         db = TinyDB('databases/warnings.json')
         guild_id_var = ctx.guild.id
@@ -222,7 +226,7 @@ class Moderation(commands.Cog):
         await ctx.send(embed=embed)
 
 
-    @commands.command()
+    @commands.command(aliases=['lock', 'lockd', 'ldown', 'ld'])
     async def lockdown(self,ctx, state):
         db = TinyDB('databases/lockdown.json')
         query = Query()
@@ -282,7 +286,7 @@ class Moderation(commands.Cog):
                                                         color=discord.Color.random()))
 
             else:
-                embed = discord.Embed(title=f"Please give a valid state, True or false", description="Try `{ctx.prefix}lockdown true` or `{ctx.prefix}lockdown false`",
+                embed = discord.Embed(title=f"Please give a valid state, True or false", description=f"Try `{ctx.prefix}lockdown true` or `{ctx.prefix}lockdown false`",
                                     color=discord.Color.random())
                 await ctx.send(embed=embed)
         else:
@@ -290,9 +294,9 @@ class Moderation(commands.Cog):
                 embed=discord.Embed(title="Stop right there!", description="You require the Manage roles permission. :expressionless:\nJk lol U need admin perms.",
                                     color=discord.Color.red()))
 
-    @commands.command()
+    @commands.command(aliases=['unm', 'um'])
     async def unmute(self,ctx, member: discord.Member):
-        if ctx.author.guild_permissions.manage_roles:
+        if ctx.author.guild_permissions.manage_messages:
             guild = ctx.guild
             mutedRole = discord.utils.get(guild.roles, name="Is Muted")
             guild = ctx.guild
@@ -313,8 +317,8 @@ class Moderation(commands.Cog):
                                     color=discord.Color.red()))
 
 
-    @commands.command()
-    async def tempmute(self,ctx,duration: TimeConverter, member: discord.Member, *, reason=None):
+    @commands.command(aliases=['tmute', 'tempm', 'tm'])
+    async def tempmute(self, ctx, duration: TimeConverter, member: discord.Member, *, reason=None):
         guild = ctx.guild
         mutedRole = discord.utils.get(guild.roles, name="Is Muted")
         if duration != 0:
@@ -333,7 +337,7 @@ class Moderation(commands.Cog):
                 return
 
 
-            if member.guild_permissions.administrator:
+            if member.guild_permissions.manage_messages:
                 embed = discord.Embed(title="Nuh uh not happening",
                                     description="You can't just mute your fellow admins.",
                                     color=discord.Color.random())
@@ -385,9 +389,9 @@ class Moderation(commands.Cog):
                                     color=discord.Color.random()))
 
 
-    @commands.command()
+    @commands.command(aliases=['m'])
     async def mute(self,ctx, member: discord.Member, *, reason="No reason given"):
-        if ctx.author.guild_permissions.administrator:
+        if ctx.author.guild_permissions.manage_messages:
             if member == ctx.author:
                 embed = discord.Embed(title="Why would you even DO that?",
                                     description=f"Did you really just try to mute yourself? :person_facepalming:",
@@ -447,7 +451,7 @@ class Moderation(commands.Cog):
                                     color=discord.Color.red()))
 
 
-    @commands.command()
+    @commands.command(aliases=['k'])
     async def kick(self,ctx, member: discord.Member):
         if ctx.author.guild_permissions.kick_members:
             if member == ctx.author:
@@ -471,9 +475,9 @@ class Moderation(commands.Cog):
                 await member.send(message)
 
             except:
-                print("Could not DM him")
+                pass
             await ctx.guild.kick(member)
-            await ctx.channel.send(embed=discord.Embed(title=f"{member} is kicked!"), color=discord.Color.random())
+            await ctx.channel.send(embed=discord.Embed(title=f"{member} is kicked!", color=discord.Color.random()))
 
         else:
             await ctx.send(
@@ -481,7 +485,7 @@ class Moderation(commands.Cog):
                                     color=discord.Color.green()))
 
 
-    @commands.command()
+    @commands.command(aliases=['unb', 'ub'])
     async def unban(self,ctx, member: discord.User = None):
         if ctx.author.guild_permissions.ban_members:
             if member is None or member == ctx.message.author:
@@ -496,7 +500,7 @@ class Moderation(commands.Cog):
                                     color=discord.Color.green()))
 
 
-    @commands.command()
+    @commands.command(aliases=['tempb', 'tban', 'tb'])
     async def tempban(self,ctx, duration: TimeConverter, member: discord.Member, *, reason=None):
         if duration != 0:
             if member == ctx.author:
@@ -507,7 +511,7 @@ class Moderation(commands.Cog):
                 await ctx.send(embed=embed)
                 return
 
-            if member.guild_permissions.administrator:
+            if member.guild_permissions.ban_members:
                 embed = discord.Embed(title="Nuh uh not happening",
                                     description="You can't just ban your fellow admins temporarily!",
                                     color=discord.Color.random())
@@ -561,7 +565,7 @@ class Moderation(commands.Cog):
                                         color=discord.Color.green()))
 
 
-    @commands.command()
+    @commands.command(aliases=['b'])
     async def ban(self,ctx, member: discord.Member, *, reason=None):
         if ctx.author.guild_permissions.ban_members:
             banned_gifs = ["https://media.tenor.com/images/d41f93e7538f0afb56ad1450fed9c02e/tenor.gif",
@@ -616,7 +620,8 @@ class Moderation(commands.Cog):
         if isinstance(error, commands.MissingRequiredArgument):
 
             if ctx.channel.slowmode_delay == 0:
-                await ctx.send("Slowmode disabled already dumbass")
+                await ctx.send(embed=discord.Embed(title="Slowmode disabled already dumbass",
+						   color=discord.Color.random()))
                 return
 
             if ctx.author.guild_permissions.administrator:
@@ -662,7 +667,7 @@ class Moderation(commands.Cog):
                                 color=discord.Color.random())
             embed.set_footer(text="I mean, isn't it obvious?")
             await ctx.send(embed=embed)
-        elif isinstance(error, commands.MemberFound):
+        elif isinstance(error, commands.MemberNotFound):
             embed = discord.Embed(title=f"Stop memeing. Just stop.",
                                 description=f"This user is not in this server.",
                                 color=discord.Color.random())
@@ -692,22 +697,33 @@ class Moderation(commands.Cog):
 
 
     @warn.error
-    async def warn_error(self,ctx,error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            embed = discord.Embed(title=f"Alright I'll bite",
-                                description=f"Who am I supposed to warn?",
-                                color=discord.Color.random())
-            embed.set_footer(text="Mentioning that wud be gr8")
-            await ctx.send(embed=embed)
+    async def warn_error(self, ctx, error):
 
-        elif isinstance(error, commands.MemberNotFound):
-            embed = discord.Embed(title=f"I couldn't find this user.",
+        if isinstance(error, commands.MemberNotFound):
+            embed = discord.Embed(title=f"I couldn't find this dude.",
                                 description=f"So instead I warned my friend Louis here...",
                                 color=discord.Color.random())
             embed.set_footer(text="Wait... what have you done to Louis?")
             await ctx.send(embed=embed)
+        
+
+        elif isinstance(error, commands.MissingRequiredArgument):
+            if "reason" in str(error.param):
+                embed = discord.Embed(title=f"Alright I'll bite",
+                                description=f"What should I warn the user for?",
+                                color=discord.Color.random())
+                embed.set_footer(text="Can't just warn him cause you said so can I?")
+                await ctx.send(embed=embed)
+            else:
+                embed = discord.Embed(title=f"Alright I'll bite",
+                                    description=f"Who am I supposed to warn?",
+                                    color=discord.Color.random())
+                embed.set_footer(text="Mentioning that wud be gr8")
+                await ctx.send(embed=embed)
+
         else:
             raise (error)
+
 
     @userwarn.error
     async def userwarn_error(self,ctx,error):

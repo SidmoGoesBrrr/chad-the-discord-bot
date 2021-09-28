@@ -8,8 +8,8 @@ class Games(commands.Cog):
         self.bot = bot
 
     
-    @commands.command()
-    async def guess(self,ctx, lower, upper):
+    @commands.command(aliases=['g'])
+    async def guess(self, ctx, lower, upper):
         boolean = False
         lower = int(lower)
         upper = int(upper)
@@ -194,6 +194,15 @@ class Games(commands.Cog):
                 embed.set_footer(text="People expect too much from my kind")
                 await ctx.send(embed=embed)
                 return
+
+            if msg==ctx.author:
+                embed = discord.Embed(title=f"Oh you lonely kid",
+                                    description=f"If you got no friends to play with, try `{ctx.prefix}rock` or something",
+                                    color=discord.Color.random())
+                embed.set_footer(text="People expect too much from my kind")
+                await ctx.send(embed=embed)
+                return
+                
             await msg.send(embed=embed2)
             await ctx.author.send(embed=embed1)
             await ctx.send("<a:ZO_DMS:871341236236193792>")
@@ -284,7 +293,7 @@ class Games(commands.Cog):
             await ctx.send(embed=discord.Embed(title="You might wanna", description="CHOOSE SOMETHING USEFUL",
                                             color=discord.Color.random()))
 
-    @commands.command()
+    @commands.command(aliases=['oddeven', 'oe'])
     async def oddeve(self,ctx, *, msg=None):
         if msg is None:
             await ctx.send(embed=discord.Embed(title="You might wanna", description="CHOOSE SOMETHING!!\n try odd or even",
@@ -321,7 +330,7 @@ class Games(commands.Cog):
                 num1 = int(msg1.content)
                 if num1 >= 10 or num1 < 0:
                     await ctx.send(
-                        embed=discord.Embed(title="WHAT PART OF 1 TO 9 DO YOU NOT UNDERSTAND", color=discord.Color.random()))
+                        embed=discord.Embed(title="WHAT PART OF 0 TO 9 DO YOU NOT UNDERSTAND", color=discord.Color.random()))
                     return
 
                 n = i = 0
@@ -377,6 +386,15 @@ class Games(commands.Cog):
                 await ctx.send(embed=embed)
                 return
 
+            if msg==ctx.author:
+                embed = discord.Embed(title=f"Oh you lonely kid",
+                                    description=f"If you got no friends to play with, try `{ctx.prefix}rock` or something",
+                                    color=discord.Color.random())
+                embed.set_footer(text="People expect too much from my kind")
+                await ctx.send(embed=embed)
+                return
+
+
             embed3 = discord.Embed(
                 title=f"Hey {ctx.author.display_name}, as you have started the match, you get to choose....",
                 description="Choose whether you want \"odd\" or \"even\"", color=discord.Color.random())
@@ -402,7 +420,7 @@ class Games(commands.Cog):
                         color=discord.Color.random())
                     embed.set_footer(text="Imagine having just 3 brain cells")
                     await ctx.send(embed=embed)
-
+                    return
             except asyncio.TimeoutError:
                 await ctx.send(embed=discord.Embed(title="You didn't answer in time",
                                                 description="HOW DARE YOU IGNORED ME <a:ZO_Cry:871340549725102081>"))
@@ -430,8 +448,8 @@ class Games(commands.Cog):
                 playerName = msg.name
                 challengerName = ctx.author.name
 
-                if playerno >= 10 or playerno <= 0 or challengerno >= 10 or challengerno <= 0:
-                    await ctx.send(embed=discord.Embed(title="WHAT PART OF 1 TO 9 DO YOU NOT UNDERSTAND",
+                if playerno >= 10 or playerno < 0 or challengerno >= 10 or challengerno < 0:
+                    await ctx.send(embed=discord.Embed(title="WHAT PART OF 0 TO 9 DO YOU NOT UNDERSTAND",
                                                     description="You ruined the game man", color=discord.Color.random()))
                     return
 

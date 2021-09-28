@@ -11,33 +11,37 @@ class Help(commands.Cog):
     @commands.command()
     async def help(self, ctx, command=None):
         def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
+            return user == ctx.author and ctx.message.id==reaction.message.id and str(reaction.emoji) in ["◀️", "▶️"]
 
         if command is None:
             embed = discord.Embed(title="Help", colour=discord.Color.random())
             embed.add_field(name="Utilities",
-                            value="`!help utilities`",
+                            value=f"`{ctx.prefix}help utilities`",
                             inline=True)
             embed.add_field(name="Moderation",
-                            value="`!help moderation`",
+                            value=f"`{ctx.prefix}help moderation`",
                             inline=True)
             embed.add_field(name="Information",
-                            value="`!help information`",
+                            value=f"`{ctx.prefix}help information`",
                             inline=True)
-            embed.add_field(name="Fun", value="`!help fun`", inline=True)
-            embed.add_field(name="Games", value="`!help games`", inline=True)
+            embed.add_field(name="Nerd",
+                            value=f"`{ctx.prefix}help nerd`",
+                            inline=True)
+            embed.add_field(name="Fun", value=f"`{ctx.prefix}help fun`", inline=True)
+            embed.add_field(name="Games", value=f"`{ctx.prefix}help games`", inline=True)
             embed.add_field(
                 name=f"Most Important Commands",
                 value=
-                f"Prefix:\n{ctx.prefix}help prefix\nPing Settings:\n{ctx.prefix}help pingset\nInvite to other servers:\n{ctx.prefix}help invite\nSupport Server:\n{ctx.prefix}help support",
+                f"Prefix:\n{ctx.prefix}help prefix\n\nPing Settings:\n{ctx.prefix}help pingset\n\nInvite to other servers:\n{ctx.prefix}help invite\n\nSupport Server:\n{ctx.prefix}help support\n\nDonations:\n{ctx.prefix}help patreon",
                 inline=False)
             embed.set_thumbnail(url=ctx.author.avatar_url)
+            embed.set_footer(text=f"Ping me if u want to know your server prefix!")
             await ctx.send(embed=embed)
             return
 
         elif command.lower() == "utilities" or command.lower() == "utils":
             page = 1
-            pages = 3
+            pages = 4
             help_utils_1 = discord.Embed(title="Utilities")
             help_utils_1.add_field(
                 name="Ping",
@@ -64,7 +68,7 @@ class Help(commands.Cog):
                 name="DeleteRole",
                 value=f"Deletes a role in the server.\n{ctx.prefix}help deleterole",
                 inline=False)
-            help_utils_1.set_footer(text="Page 1 of 3")
+            help_utils_1.set_footer(text="Page 1 of 4")
             help_utils_1.color = discord.Color.random()
 
             help_utils_2 = discord.Embed(title="Utilities")
@@ -98,39 +102,53 @@ class Help(commands.Cog):
                 value=
                 f"Remind yourself to do something in a certain amount of time!.\n{ctx.prefix}help remind",
                 inline=False)
-            help_utils_2.set_footer(text="Page 2 of 3")
+            help_utils_2.set_footer(text="Page 2 of 4")
             help_utils_2.color = discord.Color.random()
-
+            
             help_utils_3 = discord.Embed(title="Utilities")
             help_utils_3.add_field(
+            name="Snipe",
+            value=
+            f"Allows You to restore the last deleted message of the channel.\n{ctx.prefix}help snipe",
+            inline=False)
+            help_utils_3.add_field(
+            name="Snowflake",
+            value=
+            f"Find out the creation date of ANYTHING with its ID.",
+            inline=False)
+            help_utils_3.set_footer(text="Page 3 of 4")
+            help_utils_3.color = discord.Color.random()
+
+            help_utils_4 = discord.Embed(title="Utilities")
+            help_utils_4.add_field(
                 name="About",
                 value=f"Tells you something more about ME!\n{ctx.prefix}help about",
                 inline=False)
-            help_utils_3.add_field(
+            help_utils_4.add_field(
                 name="Vote",
                 value=f"Gives link to vote for me!\n{ctx.prefix}help vote",
                 inline=False)
-            help_utils_3.add_field(
-                name="Snipe",
-                value=
-                f"Allows You to restore the last deleted message of the channel.\n{ctx.prefix}help snipe",
-                inline=False)
-            help_utils_3.add_field(
+            help_utils_4.add_field(
                 name="Invite",
                 value=
                 f"Gives you the link to invite me to your servers!\n{ctx.prefix}help invite",
                 inline=False)
-            help_utils_3.add_field(
+            help_utils_4.add_field(
                 name="Support",
                 value=
                 f"Gives you my support server invite!\n{ctx.prefix}help support",
                 inline=False)
-            help_utils_3.add_field(
+            help_utils_4.add_field(
                 name="Website",
                 value=f"Takes you to my devs' website!\n{ctx.prefix}help website",
                 inline=False)
-            help_utils_3.set_footer(text="Page 3 of 3")
-            help_utils_3.color = discord.Color.random()
+            help_utils_4.add_field(
+                name="Patreon",
+                value=
+                f"Gives you the Patreon link so u can donate to my cause!\n{ctx.prefix}help patreon",
+                inline=False)
+            help_utils_4.set_footer(text="Page 4 of 4")
+            help_utils_4.color = discord.Color.random()
 
             util_message = await ctx.send(embed=help_utils_1)
 
@@ -139,9 +157,9 @@ class Help(commands.Cog):
             while True:
 
                 def check(reaction, user):
-                    return user == ctx.author and str(reaction.emoji) in [
+                    return reaction.message.id == util_message.id and user == ctx.author and str(reaction.emoji) in [
                         "◀️", "▶️"
-                    ] and reaction.message == util_message
+                    ] 
 
                 try:
                     reaction, user = await self.bot.wait_for("reaction_add",
@@ -184,6 +202,11 @@ class Help(commands.Cog):
                     elif page == 3:
                         try:
                             await util_message.edit(embed=help_utils_3)
+                        except:
+                            print("Could not edit")
+                    elif page == 4:
+                        try:
+                            await util_message.edit(embed=help_utils_4)
                         except:
                             print("Could not edit")
                     pass
@@ -279,9 +302,9 @@ class Help(commands.Cog):
             while True:
 
                 def check(reaction, user):
-                    return user == ctx.author and str(reaction.emoji) in [
+                    return reaction.message.id == mod_message.id and user == ctx.author and str(reaction.emoji) in [
                         "◀️", "▶️"
-                    ] and reaction.message == util_message
+                    ] 
 
                 try:
                     reaction, user = await self.bot.wait_for("reaction_add",
@@ -331,36 +354,275 @@ class Help(commands.Cog):
                     print("Timed out oops")
 
         elif command.lower() == "information" or command.lower() == "info":
+          page = 1
+          pages = 2
+          help_info_1 = discord.Embed(title="Information")
+          help_info_1.add_field(
+              name="Dictionary",
+              value=
+              f"Finds dictionary meanings, synonyms and antonyms.\n{ctx.prefix}help dictionary",
+              inline=False)
+          help_info_1.add_field(
+              name="Translate",
+              value=
+              f"Translates a word into any language needed.\n{ctx.prefix}help translate",
+              inline=False)
+          help_info_1.add_field(
+              name="Google",
+              value=
+              f"Allowes you to google anything you want.\n{ctx.prefix}help google",
+              inline=False)
+          help_info_1.add_field(
+              name="Let Me Google That For You",
+              value=
+              f"Uses the LMGTFY API to find the answer to your queries.\n{ctx.prefix}help lmgtfy",
+              inline=False)
+          help_info_1.set_footer(text="Page 1 of 2")
+          help_info_1.color = discord.Color.random()
+
+          help_info_2 = discord.Embed(title="Information")
+          help_info_2.add_field(
+              name="Weather",
+              value=
+              f"Gives you the current weather of a place.\n{ctx.prefix}help weather",
+              inline=False)
+          help_info_2.add_field(
+              name="Wiki",
+              value=f"Searches up the Wikipedia for you.\n{ctx.prefix}help wiki",
+              inline=False)
+          help_info_2.add_field(
+              name="UrbanDictionary",
+              value=
+              f"Allows you to access the Urban Dictionary.\n{ctx.prefix}help urban",
+              inline=False)
+          help_info_2.add_field(
+              name="Youtube",
+              value=
+              f"Let's you use YouTube through discord itself!.\n{ctx.prefix}help youtube",
+              inline=False)
+          help_info_2.set_footer(text="Page 2 of 2")
+          help_info_2.color = discord.Color.random()
+          info_message = await ctx.send(embed=help_info_1)
+
+          await info_message.add_reaction("◀️")
+          await info_message.add_reaction("▶️")
+          while True:
+
+              def check(reaction, user):
+                    return reaction.message.id == info_message.id and user == ctx.author and str(reaction.emoji) in [
+                        "◀️", "▶️"
+                    ] 
+
+              try:
+                  reaction, user = await self.bot.wait_for("reaction_add",
+                                                          timeout=300,
+                                                          check=check)
+
+                  if str(reaction.emoji) == "▶️":
+                      page += 1
+                      if page == pages + 1:
+                          page = 1
+                      try:
+                          await info_message.remove_reaction(reaction, user)
+                      except:
+                          print("Could not remove reaction in help")
+
+                  elif str(reaction.emoji) == "◀️":
+                      page -= 1
+                      if page == 0:
+                          page = pages
+                      try:
+                          await info_message.remove_reaction(reaction, user)
+                      except:
+                          print("Could not remove reaction in help")
+
+                  else:
+                      try:
+                          await info_message.remove_reaction(reaction, user)
+                      except:
+                          print("Could not remove reaction in help")
+
+                  if page == 1:
+                      try:
+                          await info_message.edit(embed=help_info_1)
+                      except:
+                          print("Could not edit")
+
+                  elif page == 2:
+                      try:
+                          await info_message.edit(embed=help_info_2)
+                      except:
+                          print("Could not edit")
+                  pass
+              except asyncio.TimeoutError:
+                  print("Timed out oops")
+
+        elif command.lower() == "nerd":
             page = 1
-            pages = 1
-            help_info_1 = discord.Embed(title="Information")
-            help_info_1.add_field(
-                name="Dictionary",
+            pages = 4
+            help_nerd_1 = discord.Embed(title="Nerd")
+            help_nerd_1.add_field(
+                name="Add",
                 value=
-                f"Finds dictionary meanings, synonyms and antonyms.\n{ctx.prefix}help dictionary",
+                f"Adds numbers for you\n{ctx.prefix}help add",
                 inline=False)
-            help_info_1.add_field(
-                name="Translate",
+            help_nerd_1.add_field(
+                name="Subtract",
+                value=f"Subtracts numbers for you\n{ctx.prefix}help subtract",
+                inline=False)
+            help_nerd_1.add_field(
+                name="Multiply",
+                value=f"Multiplies numbers for you.\n{ctx.prefix}help multiply",
+                inline=False)
+            help_nerd_1.add_field(
+                name="Divide",
                 value=
-                f"Translates a word into any language needed.\n{ctx.prefix}help translate",
+                f"Divides to numbers for you.\n{ctx.prefix}help divide",
                 inline=False)
-            help_info_1.add_field(
-                name="Weather",
+            help_nerd_1.set_footer(text="Page 1 of 4")
+            help_nerd_1.color = discord.Color.random()
+
+            help_nerd_2 = discord.Embed(title="Nerd")
+            help_nerd_2.add_field(
+                name="Square",
+                value=f"Gets the square of a number for you.\n{ctx.prefix}help square",
+                inline=False)
+            help_nerd_2.add_field(
+                name="Cube",
                 value=
-                f"Gives you the current weather of a place.\n{ctx.prefix}help weather",
+                f"Gets the cube of a number for you\n{ctx.prefix}help cube",
                 inline=False)
-            help_info_1.add_field(
-                name="Wiki",
-                value=f"Searches up the Wikipedia for you.\n{ctx.prefix}help wiki",
+            help_nerd_2.add_field(
+                name="Square Root",
+                value=f"Gets the square root of a number for you.\n{ctx.prefix}help sqrt",
                 inline=False)
-            help_info_1.add_field(
-                name="UrbanDictionary",
+            help_nerd_2.add_field(
+                name="Cube Root",
+                value=f"Gets the cube root of a number for you.\n{ctx.prefix}help cbrt",
+                inline=False)
+            help_nerd_2.add_field(
+                name="Power",
+                value=f"Gets any power of any number for you.\n{ctx.prefix}help power",
+                inline=False)
+            help_nerd_2.add_field(
+                name="Root",
                 value=
-                f"Allows you to access the Urban Dictionary.\n{ctx.prefix}help urban",
+                f"Gets any root of any number for you.\n{ctx.prefix}help root",
                 inline=False)
-            help_info_1.set_footer(text="Page 1 of 1")
-            help_info_1.color = discord.Color.random()
-            fun_message = await ctx.send(embed=help_info_1)
+            help_nerd_2.set_footer(text="Page 2 of 4")
+            help_nerd_2.color = discord.Color.random()
+
+            help_nerd_3 = discord.Embed(title="Nerd")
+            help_nerd_3.add_field(
+                name="Perimeter",
+                value=f"Gets the perimeter of certain shapes for you.\n{ctx.prefix}help perimeter",
+                inline=False)
+            help_nerd_3.add_field(
+                name="Area",
+                value=f"Gets the area of certain shapes for you.\n{ctx.prefix}help area",
+                inline=False)
+            help_nerd_3.add_field(
+                name="Ask A Question",
+                value=f"Allows you to ask me any random question.\n{ctx.prefix}help question",
+                inline=False)
+            
+            help_nerd_3.set_footer(text="Page 3 of 4")
+            help_nerd_3.color = discord.Color.random()
+
+            help_nerd_4 = discord.Embed(title="Nerd")
+            help_nerd_4.add_field(
+                name="Trig",
+                value=f"Gives you some info about trignometric functions.\n{ctx.prefix}trig (this feature has no help function)",
+                inline=False)
+            help_nerd_4.add_field(
+                name="Sin",
+                value=f"Gives you info about sin\n{ctx.prefix}sin (this feature has no help function)",
+                inline=False)
+            help_nerd_4.add_field(
+                name="Cos",
+                value=f"Gives you info about cos\n{ctx.prefix}cos (this feature has no help function)",
+                inline=False)
+            help_nerd_4.add_field(
+                name="Tan",
+                value=f"Gives you info about tan\n{ctx.prefix}tan (this feature has no help function)",
+                inline=False)
+            help_nerd_4.add_field(
+                name="Sec",
+                value=f"Gives you info about sec\n{ctx.prefix}sec (this feature has no help function)",
+                inline=False)
+            help_nerd_4.add_field(
+                name="Cosec",
+                value=f"Gives you info about cosec\n{ctx.prefix}cosec (this feature has no help function)",
+                inline=False)
+            help_nerd_4.add_field(
+                name="Cot",
+                value=f"Gives you info about cot\n{ctx.prefix}cot (this feature has no help function)",
+                inline=False)
+            
+            help_nerd_4.set_footer(text="Page 4 of 4")
+            help_nerd_4.color = discord.Color.random()
+            nerd_message = await ctx.send(embed=help_nerd_1)
+
+            await nerd_message.add_reaction("◀️")
+            await nerd_message.add_reaction("▶️")
+            while True:
+
+                def check(reaction, user):
+                    return reaction.message.id == nerd_message.id and user == ctx.author and str(reaction.emoji) in [
+                        "◀️", "▶️"
+                    ] 
+
+                try:
+                    reaction, user = await self.bot.wait_for("reaction_add",
+                                                            timeout=300,
+                                                            check=check)
+
+                    if str(reaction.emoji) == "▶️":
+                        page += 1
+                        if page == pages + 1:
+                            page = 1
+                        try:
+                            await nerd_message.remove_reaction(reaction, user)
+                        except:
+                            print("Could not remove reaction in help")
+                    elif str(reaction.emoji) == "◀️":
+                        page -= 1
+                        if page == 0:
+                            page = pages
+                        try:
+                            await nerd_message.remove_reaction(reaction, user)
+                        except:
+                            print("Could not remove reaction in help")
+
+                    else:
+                        try:
+                            await nerd_message.remove_reaction(reaction, user)
+                        except:
+                            print("Could not remove reaction in help")
+
+                    if page == 1:
+                        try:
+                            await nerd_message.edit(embed=help_nerd_1)
+                        except:
+                            print("Could not edit")
+                    elif page == 2:
+                        try:
+                            await nerd_message.edit(embed=help_nerd_2)
+                        except:
+                            print("Could not edit")
+                    elif page == 3:
+                        try:
+                            await nerd_message.edit(embed=help_nerd_3)
+                        except:
+                            print("Could not edit")
+                    elif page == 4:
+                        try:
+                            await nerd_message.edit(embed=help_nerd_4)
+                        except:
+                            print("Could not edit")
+                    pass
+                except asyncio.TimeoutError:
+                    print("Timed out oops")
 
         elif command.lower() == "fun":
             page = 1
@@ -393,6 +655,10 @@ class Help(commands.Cog):
                 name="Poll",
                 value=f"Creates a poll for you.\n{ctx.prefix}help poll",
                 inline=False)
+            help_fun_1.add_field(
+                name="Color",
+                value=f"Shows you the color of a hexdecimal.\n{ctx.prefix}help color",
+                inline=False)
             help_fun_1.set_footer(text="Page 1 of 3")
             help_fun_1.color = discord.Color.random()
 
@@ -411,6 +677,14 @@ class Help(commands.Cog):
                 value=f"Creates a cool ASCII art for you.\n{ctx.prefix}help ascii",
                 inline=False)
             help_fun_2.add_field(
+                name="Emojify",
+                value=f"Turns your text into emojis!\n{ctx.prefix}help emojify",
+                inline=False)
+            help_fun_2.add_field(
+                name="Spoilify",
+                value=f"Spoils your message just for you!.\n{ctx.prefix}help spoilify",
+                inline=False)
+            help_fun_2.add_field(
                 name="Act",
                 value=
                 f"Makes me act as though I'm another user...\n{ctx.prefix}help act",
@@ -420,14 +694,14 @@ class Help(commands.Cog):
                 value=
                 f"Lets you choose between the given options.\n{ctx.prefix}help chooser",
                 inline=False)
-            help_fun_2.add_field(
-                name="Coinflip",
-                value=f"Flips a coin for you.\n{ctx.prefix}help coinflip",
-                inline=False)
             help_fun_2.set_footer(text="Page 2 of 3")
             help_fun_2.color = discord.Color.random()
 
             help_fun_3 = discord.Embed(title="Fun")
+            help_fun_3.add_field(
+                name="Coinflip",
+                value=f"Flips a coin for you.\n{ctx.prefix}help coinflip",
+                inline=False)
             help_fun_3.add_field(
                 name="Hack",
                 value=f"Hacks the required user.\n{ctx.prefix}help hack",
@@ -445,12 +719,22 @@ class Help(commands.Cog):
             help_fun_3.add_field(
                 name="VCMeme",
                 value=
-                f"Let's you have some fun with the people in your VC.\n{ctx.prefix}help vcmeme",
+                f"Lets you have some fun with the people in your VC.\n{ctx.prefix}help vcmeme",
                 inline=False)
             help_fun_3.add_field(
                 name="Quote",
                 value=
                 f"Allows you to quote the sayings of your fellow human beings.\n{ctx.prefix}help quote",
+                inline=False)
+            help_fun_3.add_field(
+                name="Kill",
+                value=
+                f"Kill your friends... But minecraft style\n{ctx.prefix}help kill",
+                inline=False)
+            help_fun_3.add_field(
+                name="Roast",
+                value=
+                f"Resepct? Nah mate...\n{ctx.prefix}help roast",
                 inline=False)
             help_fun_3.set_footer(text="Page 3 of 3")
             help_fun_3.color = discord.Color.random()
@@ -461,8 +745,9 @@ class Help(commands.Cog):
             while True:
 
                 def check(reaction, user):
-                    return user == ctx.author and str(
-                        reaction.emoji) in ["◀️", "▶️"]
+                    return reaction.message.id == fun_message.id and user == ctx.author and str(reaction.emoji) in [
+                        "◀️", "▶️"
+                    ] 
 
                 try:
                     reaction, user = await self.bot.wait_for("reaction_add",
@@ -523,12 +808,12 @@ class Help(commands.Cog):
             help_games_1.add_field(
                 name="Rps",
                 value=
-                f"Lets you play rock paper scissor with me **OR** your friends{ctx.prefix}\n{ctx.prefix}help rps",
+                f"Lets you play rock paper scissor with me **OR** your friends.\n{ctx.prefix}help rps",
                 inline=False)
             help_games_1.add_field(
                 name="OddEve",
                 value=
-                f"Lets you play odd eve with me **OR** your friends{ctx.prefix}\n(cricket version coming out soon)\n{ctx.prefix}help oddeve",
+                f"Lets you play odd eve with me **OR** your friends.n(cricket version coming out soon)\n{ctx.prefix}help oddeve",
                 inline=False)
             help_games_1.add_field(name="More games coming soon!",
                                   value=f"You better believe it!")
@@ -665,6 +950,19 @@ class Help(commands.Cog):
             embed.set_footer(text="Get support its good for you")
             await ctx.send(embed=embed)
 
+        elif command.lower() == 'patreon' or command.lower() == 'donate':
+            embed = discord.Embed(
+                title="Help Patreon",
+                description=
+                "Really pleased with my awesomeness?\nWanna show your love?\nGot a lot of money to burn?",
+                colour=discord.Color.green(),
+                inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=f"{ctx.prefix}patreon\nUse this to donate to me, so that I can be better!")
+            embed.set_footer(text="It's worth it, honestly.")
+            await ctx.send(embed=embed)
+
         elif command.lower() == 'userinfo':
             embed = discord.Embed(
                 title="Help UserInfo",
@@ -777,21 +1075,6 @@ class Help(commands.Cog):
             embed.set_footer(text="I mean, why not?")
             await ctx.send(embed=embed)
 
-        elif command.lower() == 'snipe':
-            embed = discord.Embed(
-                title="Help Snipe",
-                description=
-                "Find out what the last deleted message in your server was.",
-                colour=discord.Color.green(),
-                inline=True)
-            embed.add_field(
-                name="Usage:",
-                value=
-                f"{ctx.prefix}snipe\nNow you can catch your sneaky server members in the act!"
-            )
-            embed.set_footer(text="More stonx for u")
-            await ctx.send(embed=embed)
-
         elif command.lower() == 'invite':
             embed = discord.Embed(
                 title="Help invite",
@@ -818,6 +1101,36 @@ class Help(commands.Cog):
                 f"{ctx.prefix}website\nPlease use this :pleading_face:\nIt's not really related to me, but its cool anyway."
             )
             embed.set_footer(text="See you there!")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'snipe':
+            embed = discord.Embed(
+                title="Help Snipe",
+                description=
+                "Find out what the last deleted message in your server was.",
+                colour=discord.Color.green(),
+                inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}snipe\nNow you can catch your sneaky server members in the act!"
+            )
+            embed.set_footer(text="More stonx for u")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'snowflake':
+            embed = discord.Embed(
+                title="Help Snowflake",
+                description=
+                "Use the ID of anything to find out the date of creation!",
+                colour=discord.Color.green(),
+                inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}snowflake\nUseful for devs and people who want to know how old stuff is."
+            )
+            embed.set_footer(text="More stonx for u")
             await ctx.send(embed=embed)
 
         elif command.lower() == 'slowmode':
@@ -1052,6 +1365,34 @@ class Help(commands.Cog):
             embed.set_footer(text="Merci!")
             await ctx.send(embed=embed)
 
+        elif command.lower() == 'google' or command.lower() == 'search':
+            embed = discord.Embed(
+                title="Help Google  ",
+                description="Lets you google anything you want",
+                colour=discord.Color.green(),
+                inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}google <whatyouwanttogoogle>\nGoogles the thing you enter"
+            )
+            embed.set_footer(text="Perfect for searching through discord instead of your browser")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'lmgtfy' or command.lower() == 'letmegooglethatforyou':
+            embed = discord.Embed(
+                title="Help Let Me Google That For You",
+                description="Kinda self explainatory...",
+                colour=discord.Color.green(),
+                inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}lmgtfy <thinguneedtogoogle>\nAgain, pretty obvious why this command exists."
+            )
+            embed.set_footer(text="So basically, an obvious command")
+            await ctx.send(embed=embed)
+
         elif command.lower() == 'weather':
             embed = discord.Embed(
                 title="Help Weather",
@@ -1093,18 +1434,162 @@ class Help(commands.Cog):
                 text=
                 "The urban dict be lollers (I mean try searching your own name)")
             await ctx.send(embed=embed)
+          
+        elif command.lower() == 'youtube':
+            embed = discord.Embed(
+                title="Help Youtube",
+                description="Lets you access YouTube itself through discord!",
+                colour=discord.Color.green(),
+                inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}youtube <thingyouwannasee>\nSo now you lazy folks don't even need to open your browser!"
+            )
+            embed.set_footer(text="This is for true legends")
+            await ctx.send(embed=embed)
 
-        elif command.lower() == 'ask':
-            embed = discord.Embed(title="Help Ask",
-                                  description="Answer you question for you.",
+        elif command.lower() == 'add':
+            embed = discord.Embed(title="Help Add",
+                                  description="Adds two or more numbers for you.",
                                   colour=discord.Color.green(),
                                   inline=True)
             embed.add_field(
                 name="Usage:",
                 value=
-                f"{ctx.prefix}ask <question>\nIts prophetic power is to be respected."
+                f"{ctx.prefix}add <number1> <number2> etc..."
             )
-            embed.set_footer(text="The Bot don't lie...")
+            embed.set_footer(text="I can add a lot of stuff tbh")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'subtract' or command.lower() == 'subs':
+            embed = discord.Embed(title="Help Subtract",
+                                  description="Subtracts only two numbers for you.",
+                                  colour=discord.Color.green(),
+                                  inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}subtract <number1> <number2>"
+            )
+            embed.set_footer(text="I can subtract a only two numbers for obvious reasons")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'multiply' or command.lower() == 'multi':
+            embed = discord.Embed(title="Help Multiply",
+                                  description="Multiplication two or more numbers for you.",
+                                  colour=discord.Color.green(),
+                                  inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}mulitply <number1> <number2> etc..."
+            )
+            embed.set_footer(text="I can multiply a lot of stuff tbh")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'divide' or command.lower() == 'div':
+            embed = discord.Embed(title="Help Divide",
+                                  description="Divides only two numbers for you.",
+                                  colour=discord.Color.green(),
+                                  inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}divide <number1> <number2>"
+            )
+            embed.set_footer(text="I can divide a only two numbers for obvious reasons")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'square':
+            embed = discord.Embed(title="Help Square",
+                                  description="Finds the square of a number for you.",
+                                  colour=discord.Color.green(),
+                                  inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}square <number>"
+            )
+            embed.set_footer(text="It's pretty straight forward and **ded** useful")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'cube':
+            embed = discord.Embed(title="Help Cube",
+                                  description="Finds the cube of a number for you.",
+                                  colour=discord.Color.green(),
+                                  inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}cube <number>"
+            )
+            embed.set_footer(text="It's pretty straight forward and **ded** useful")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'sqrt':
+            embed = discord.Embed(title="Help Square Root",
+                                  description="Finds the square root of a number for you.",
+                                  colour=discord.Color.green(),
+                                  inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}squareroot <number>"
+            )
+            embed.set_footer(text="It's pretty straight forward and **ded** useful")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'cbrt':
+            embed = discord.Embed(title="Help Cube Root",
+                                  description="Finds the cube root of a number for you.",
+                                  colour=discord.Color.green(),
+                                  inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}cuberoot <number>"
+            )
+            embed.set_footer(text="It's pretty straight forward and **ded** useful")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'power':
+            embed = discord.Embed(title="Help Power",
+                                  description="Finds any power of any number for you.\nBasically if you need the power of something more than 2 and 3.",
+                                  colour=discord.Color.green(),
+                                  inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}power <number> <power>"
+            )
+            embed.set_footer(text="An OP function if I do say so myself")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'root':
+            embed = discord.Embed(title="Help Root",
+                                  description="Finds any root of any number for you.\nBasically if you need the root of something more than 2 and 3.",
+                                  colour=discord.Color.green(),
+                                  inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}root <number> <root>"
+            )
+            embed.set_footer(text="Another OP function if I do say so myself")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'question' or command.lower() == 'aaq':
+            embed = discord.Embed(title="Help Ask A Question",
+                                  description="You ask me a question, I give you it's answer.",
+                                  colour=discord.Color.green(),
+                                  inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}question <question>"
+            )
+            embed.set_footer(text="Im just wondering how many ppl will fail to use this properly")
             await ctx.send(embed=embed)
 
         elif command.lower() == 'repeat':
@@ -1173,6 +1658,20 @@ class Help(commands.Cog):
                 text="I don't think there is any other way to poll on discord...")
             await ctx.send(embed=embed)
 
+        elif command.lower() == 'color' or command.lower() == 'colour':
+            embed = discord.Embed(title="Help Color",
+                                  description="Shows you the color of a hex decimal you give me.",
+                                  colour=discord.Color.green(),
+                                  inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}color #<hexdecimal>\nFor example, {ctx.prefix}color #7289DA"
+            )
+            embed.set_footer(
+                text="An exclusive feature that most bots DON'T have")
+            await ctx.send(embed=embed)
+
         elif command.lower() == 'script':
             embed = discord.Embed(title="Help Script",
                                   description="Translates the ZeroAndOne Script",
@@ -1198,6 +1697,34 @@ class Help(commands.Cog):
                 f"{ctx.prefix}ascii <stufftoput>\nI can't really explain it's beauty."
             )
             embed.set_footer(text="What you put may or may not be what you get")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'emojify' or command.lower() == 'emo':
+            embed = discord.Embed(
+                title="Help Emojijy",
+                description="Give me TEXT and I will give you EMOJIS",
+                colour=discord.Color.green(),
+                inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}emojify <sometext>\nIt's quite creative, really."
+            )
+            embed.set_footer(text="It makes quite the statement too!")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'spoilify' or command.lower() == 'spoil':
+            embed = discord.Embed(
+                title="Help Spoilify",
+                description="Annoys your friends if they want to read your message.",
+                colour=discord.Color.green(),
+                inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=
+                f"{ctx.prefix}spoilify <stufftoput>\nExcellent command for losing friends!"
+            )
+            embed.set_footer(text="Jk chill its hilarious tho")
             await ctx.send(embed=embed)
 
         elif command.lower() == 'act':
@@ -1315,6 +1842,32 @@ class Help(commands.Cog):
                 name="Usage:",
                 value=f"{ctx.prefix}quote <quoter> <quote>\nIt gives you glory.")
             embed.set_footer(text="Always remember...")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'kill':
+            embed = discord.Embed(
+                title="Help Kill",
+                description=
+                "Kill someone with minecraft messages!!!",
+                colour=discord.Color.green(),
+                inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=f"{ctx.prefix}kill <Person>\nCoffin Dance Music Plays.")
+            embed.set_footer(text="Yuo Ded")
+            await ctx.send(embed=embed)
+
+        elif command.lower() == 'roast':
+            embed = discord.Embed(
+                title="Help Roast",
+                description=
+                "Roast someone or yourself",
+                colour=discord.Color.green(),
+                inline=True)
+            embed.add_field(
+                name="Usage:",
+                value=f"{ctx.prefix}roast <Person>(Optional)\nDisrespekt")
+            embed.set_footer(text="OOOH OOOOH")
             await ctx.send(embed=embed)
 
         elif command.lower() == 'guess':

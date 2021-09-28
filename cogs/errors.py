@@ -67,11 +67,19 @@ class Errors(commands.Cog):
             await ctx.send(
                 "An error occurred while I was trying to execute a task. Are you sure I have the correct permissions?"
             )
+        
+        elif isinstance(err, discord.errors.Forbidden):
+            print("Forbidden, sad")
 
         elif isinstance(err, commands.MaxConcurrencyReached):
             await ctx.send(
                 f"`{ctx.command.qualified_name}` can only be used {err.number} command at a time under {str(err.per)}"
             )
+
+
+        elif isinstance(err, commands.errors.CommandNotFound):
+            pass
+
 
         self.logger.error("".join(format_exception(err, err, err.__traceback__)))
 

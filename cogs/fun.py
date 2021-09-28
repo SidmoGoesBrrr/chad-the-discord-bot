@@ -12,10 +12,14 @@ from modules import encrypt as enc, decrypt as dec
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
+import base64
 from io import BytesIO
 import time
 from discord.utils import get
 import re
+import os
+from dotenv import load_dotenv
+load_dotenv()
 def adjust_text(text, draw, font):
         bits = []
         bit = ""
@@ -31,7 +35,10 @@ def adjust_text(text, draw, font):
             while draw.textsize(text, font=font)[1] > 199 - 70:
                 text = text[:-1]
         return text
-        
+
+
+
+
 emojiLetters = [
     "\N{REGIONAL INDICATOR SYMBOL LETTER A}",
     "\N{REGIONAL INDICATOR SYMBOL LETTER B}",
@@ -92,7 +99,7 @@ class Fun(commands.Cog):
 
     
     @commands.command()
-    async def ask(self,ctx, *, question):
+    async def ask(self, ctx, *, question):
         message = ctx.message.content.lower()
         list = ["will", "how", "why", "is",
                 "when", "where", "who", "whom", "I", "@", "can", "am", "should", "are", "were", "if", "did", "does", "do",
@@ -126,7 +133,7 @@ class Fun(commands.Cog):
     @commands.command()
     async def gif(self,ctx, *, q="random"):
 
-        api_key = os.environ['giphy_api']
+        api_key = os.getenv('giphy_api')
         api_instance = giphy_client.DefaultApi()
         try: 
         # Search Endpoint
@@ -146,7 +153,7 @@ class Fun(commands.Cog):
 
 
     @commands.cooldown(1, 30, commands.BucketType.guild)
-    @commands.command()
+    @commands.command(aliases=['repeater', 'spammer', 'spam'])
     async def repeat(self,ctx, times, *, msg):
         try:
             times = int(times)
@@ -196,7 +203,7 @@ class Fun(commands.Cog):
         await ctx.send(embed=embed)
 
 
-    @commands.command()
+    @commands.command(aliases=['epicgamerate', 'egr', 'epicgr', 'egrate', 'epicgamerr8', 'epicgamer8'])
     async def epicgamerrate(self,ctx, member: discord.Member = None):
         num = random.randint(1, 100)
         if member is None:
@@ -219,7 +226,7 @@ class Fun(commands.Cog):
         await ctx.send(embed=embed)
 
 
-    @commands.command()
+    @commands.command(aliases=['sr', 'simpr', 'srate', 'sr8'])
     async def simprate(self,ctx, member: discord.Member = None):
         num = random.randint(1, 100)
         if member is None:
@@ -241,7 +248,7 @@ class Fun(commands.Cog):
         await ctx.send(embed=embed)
 
 
-    @commands.command()
+    @commands.command(aliases=['pole'])
     async def poll(self,ctx, duration: TimeConverter, *, argument: str):
         if duration != 0:
             voters = []
@@ -293,14 +300,15 @@ class Fun(commands.Cog):
             while True:  # Exit after a certain time
                 try:
                     reaction, user = await self.bot.wait_for('reaction_add', timeout=1.0, check=check)
-                    if not user.bot:
-                        await message.remove_reaction(reaction, user)
-                    # Check if the user has already voted
-                    if user not in voters:
-                        voters.append(user)
+                    if user.bot:
+                      continue
 
-                        vote_counts[react_to_option[reaction.emoji]] += 1
-                        print(vote_counts)
+                    elif not user.bot:
+                        await message.remove_reaction(reaction, user)                   
+                        if user not in voters:
+                            voters.append(user)
+                            vote_counts[react_to_option[reaction.emoji]] += 1
+                            print(vote_counts)
 
                 except asyncio.TimeoutError:
                     if datetime.datetime.now() > start_time + datetime.timedelta(seconds=duration):
@@ -324,22 +332,98 @@ class Fun(commands.Cog):
 
 
         else:
-            await ctx.send(embed=discord.Embed(title="Please mention a valid duration!"), color=discord.Color.random())
-
+            await ctx.send(embed=discord.Embed(title="Please mention a valid duration!",color=discord.Color.random()))
     
-    @commands.command()
-    async def ascii(self,ctx, *, txt: str):
+    @commands.command(aliases=['hex', 'colour'])
+    async def color(self,ctx, inputcolor=''):
+        guild_id = str(ctx.guild.id)
+        author_id = str(ctx.author.id)
+        time1 = str(time.time())
+
+        if inputcolor == '':
+            randgb = lambda: random.randint(0, 255)
+            hexcode = '%02X%02X%02X' % (randgb(), randgb(), randgb())
+            rgbcode = str(tuple(int(hexcode[i:i+2], 16) for i in (0, 2, 4)))
+            await ctx.send('`Hex: #' + hexcode + '`\n`RGB: ' + rgbcode + '`')
+            heximg = Image.new("RGB", (64, 64), '#' + hexcode)
+            heximg.save(f'images/{guild_id + author_id + time1}.png')
+            await ctx.send(file=discord.File(f'images/{guild_id + author_id + time1}.png'))
+
+
+        else:
+            if inputcolor.startswith('#'):
+                hexcode = inputcolor[1:]
+                if len(hexcode) != 6:
+                    await ctx.send('Make sure hex code is this format: `#7289DA`')
+                    return
+                rgbcode = str(tuple(int(hexcode[i:i+2], 16) for i in (0, 2, 4)))
+                await ctx.send('`Hex: #' + hexcode + '`\n`RGB: ' + rgbcode + '`')
+                heximg = Image.new("RGB", (64, 64), '#' + hexcode)
+                heximg.save(f'images/{guild_id + author_id + time1}.png')
+                await ctx.send(file=discord.File(f'images/{guild_id + author_id + time1}.png'))
+
+            else:
+                await ctx.send('Make sure hex code is this format: `#7289DA`')
+
+
+    @commands.command(aliases=['as'])
+    async def ascii(self, ctx, *, txt: str):
         txt = await commands.clean_content().convert(ctx, txt)
         split_text = txt.split(' ', maxsplit=1)
-        if split_text[0].lower() == 'remove':
+        if split_text[0].lower() == 'rem' or split_text[0].lower() == 'remove':
             await ctx.message.delete()
+            try:
+              result = pyfiglet.figlet_format(split_text[1])
+            except:
+              embed = discord.Embed(title=f"Done!",
+                                description=f"Successfully converted *nothing* into a beautiful picture!\nNow try actually giving me something for me to use",
+                                color=discord.Color.random())
+              embed.set_footer(text="smh smh SMH")
+              await ctx.send(embed=embed)
+              return
         else:
             result = pyfiglet.figlet_format(txt)
         await ctx.send("```" + result + "```")
 
+    @commands.command(aliases=['emo'])
+    async def emojify(self, ctx, *, text: str):
+        emojified = ''
+        formatted = re.sub(r'[^A-Za-z ]+', "", text).lower()
+        for i in formatted:
+            if i == ' ':
+                emojified += '     '
+            else:
+                emojified += ':regional_indicator_{}: '.format(i)
+        if len(emojified) + 2 >= 2000:
+            await ctx.send(embed=discord.Embed(title='Your message in emojis exceeds 2000 characters!', color=discord.Color.random()))
+            return
+        if len(emojified) <= 25:
+            await ctx.send(embed=discord.Embed(title='Your message could not be converted!'), color=discord.Color.random())
+            return
+        else:
+            await ctx.send(emojified)
+
+    @commands.command(aliases=['spoil'])
+    async def spoilify(self, ctx, *, text: str):
+        split = text.split(" ", maxsplit=1)
+        spoilified = ''
+        if split[0] == 'rem' or split[0] == 'remove':
+            await ctx.message.delete()
+            text = split[1]
+        for i in text:
+            spoilified += '||{}||'.format(i)
+        if len(spoilified) + 2 >= 2000:
+            await ctx.send(embed=discord.Embed(title='Your message in spoilers exceeds 2000 characters!'), color=discord.Color.random())
+            return
+        if len(spoilified) <= 4:
+            await ctx.send(embed=discord.Embed(title='Your message could not be converted!'), color=discord.Color.random())
+            return
+        else:
+            await ctx.send(spoilified)
+
 
     @commands.command()
-    async def act(self,ctx, member: discord.Member, *, message=None):
+    async def act(self,ctx, member: discord.User, *, message=None):
         
             if message == None:
                 await ctx.send(embed=discord.Embed(title= f'Please provide a message with that!',color=discord.Color.random()))
@@ -362,15 +446,16 @@ class Fun(commands.Cog):
                             await webhook.delete()
                         except:
                             print("Cant delete 'hook'")
-            except discord.errors.HTTPException:
 
-                await ctx.send("Ouch! I'm sorry but max webhooks reached. I can't do the act command!")
+            #except discord.errors.HTTPException:
+
+                #await ctx.send("Ouch! I'm sorry but max webhooks #reached. I can't do the act command!")
 
             except discord.errors.Forbidden:
                 await ctx.send("Ouch! I'm sorry but I got no perms. I can't do the act command!")
 
 
-    @commands.command()
+    @commands.command(aliases=['enc', 'script'])
     async def encrypt(self,ctx, *, text_to_encrypt: str):
         valid_reactions = ['<:trash:867001275634417714>']
         embed = discord.Embed(title="Encoding your message <a:zo_typing:873129455483256832>",
@@ -382,7 +467,7 @@ class Fun(commands.Cog):
         await message.add_reaction('<:trash:867001275634417714>')
 
         def check(reaction, user):
-            return reaction.message == message and str(
+            return reaction.message.id == message.id and str(
                 reaction.emoji) == '<:trash:867001275634417714>' and user == ctx.author
 
         await self.bot.wait_for('reaction_add', check=check)
@@ -390,7 +475,7 @@ class Fun(commands.Cog):
         await message.delete()
 
 
-    @commands.command()
+    @commands.command(aliases=['dec'])
     async def decrypt(self,ctx, *, text_to_decrypt: str):
         embed = discord.Embed(title="Decoding your message <a:zo_typing:873129455483256832>",
                             description="This is your message. :face_with_monocle:\n Hope you have what you need. :slight_smile:")
@@ -401,7 +486,7 @@ class Fun(commands.Cog):
         await message.add_reaction('<:trash:867001275634417714>')
 
         def check(reaction, user):
-            return reaction.message == message and str(
+            return reaction.message.id == message.id and str(
                 reaction.emoji) == '<:trash:867001275634417714>' and user == ctx.author
 
         await self.bot.wait_for('reaction_add', check=check)
@@ -410,7 +495,7 @@ class Fun(commands.Cog):
 
 
 
-    @commands.command()
+    @commands.command(aliases=['bin'])
     async def binary(self,ctx, *, string: str):
         def toBinary(a):
             l, m = [], []
@@ -430,7 +515,7 @@ class Fun(commands.Cog):
         await ctx.send(embed=embed)
 
 
-    @commands.command()
+    @commands.command(aliases=['ch'])
     async def choose(self,ctx, *choices: str):
         embed = discord.Embed(
             title=f"I choose...",
@@ -442,7 +527,7 @@ class Fun(commands.Cog):
         await ctx.send(embed=embed)
 
 
-    @commands.command()
+    @commands.command(aliases=['cf', 'cflip', 'coinf'])
     async def coinflip(self,ctx, *, option=None):
         if option != None:
             choice = option.lower()
@@ -487,7 +572,7 @@ class Fun(commands.Cog):
         await ctx.send(embed=embed)
 
 
-    @commands.command()
+    @commands.command(aliases=['infect', 'destroy'])
     async def hack(self,ctx, member: discord.User):
         extensions_list = ["au", "in", "us", "uk", "fr"]
         emails_list = [f"{str(member.name)}@gmail.com",
@@ -567,16 +652,16 @@ class Fun(commands.Cog):
 
 
         
-    @commands.command()
+    @commands.command(aliases=['imgmemes', 'imagememe', 'imgmeme','img'])
     async def imagememes(self,ctx):
         embed = discord.Embed(title="Image Memes List",
                             description="Here is the list of POG image memes you can use.",
                             inline=False)
-        embed.add_field(name="List", value=f"1. {ctx.prefix}worthless\n2. {ctx.prefix}wanted\n3. {ctx.prefix}rip\n4. {ctx.prefix}chad")
+        embed.add_field(name="List", value=f"1. {ctx.prefix}worthless\n2. {ctx.prefix}wanted\n3. {ctx.prefix}rip\n4. {ctx.prefix}chad. \n5. {ctx.prefix}yeet")
         await ctx.send(embed=embed)
 
 
-    @commands.command()
+    @commands.command(aliases=['wls'])
     async def worthless(self,ctx, *, worthless_text):
         img = Image.open('templates/worthless_template.jpg')
         draw = ImageDraw.Draw(img)
@@ -591,7 +676,7 @@ class Fun(commands.Cog):
         await ctx.send(file=discord.File(f'images/{guild_id + author_id + time1}.png'))
 
 
-    @commands.command()
+    @commands.command(aliases=['want'])
     async def wanted(self,ctx, user: discord.Member = None):
         if not user:
             user = ctx.author
@@ -655,259 +740,253 @@ class Fun(commands.Cog):
         await ctx.send(file=discord.File(f'images/{guild_id + author_id + time1}.png'))
     
     @commands.command()
+    async def yeet(self,ctx,user:discord.User=None):
+        if user is None:
+            user=ctx.author
+
+        yeet = Image.open('templates/yeet_template.jpg')
+        asset = user.avatar_url_as(size=128)
+        data = BytesIO(await asset.read())
+        pfp = Image.open(data)
+        pfp = pfp.resize((70, 70))
+        pfp = pfp.convert('RGB')
+        mask = Image.new("L", pfp.size, 0)
+        draw = ImageDraw.Draw(mask)
+        draw.ellipse((0, 0, mask.size[0], mask.size[1]), fill=255)
+        yeet.paste(pfp, (447, 417), mask=mask)
+        guild_id = str(ctx.guild.id)
+        author_id = str(ctx.author.id)
+        time1 = str(time.time())
+        yeet.save(f'images/{guild_id + author_id + time1}.png')
+        await ctx.send(file=discord.File(f'images/{guild_id + author_id + time1}.png'))
+
+
+    @commands.command()
+    async def kill(self,ctx, *, user='You'):
+        victim=user
+        killer=ctx.message.author.mention
+        #victim is person to kill
+        #killer is person who does command
+        phrases=[f"{victim} fell out of the world",
+                f"{victim} was shot by {killer}",
+                f"{victim} was pummeled by {killer}",
+                f"{victim} was pricked to death",
+                f"{victim} walked into a cactus whilst trying to escape {killer}",
+                f"{victim} drowned",
+                f"{victim} drowned whilst trying to escape {killer}",
+                f"{victim} experienced kinetic energy",
+                f"{victim} blew up",
+                f"{victim} was blown up by Creeper",
+                f"{victim} was killed by [Intentional Game Design]",
+                f"{victim} hit the ground too hard",
+                f"{victim} hit the ground too hard whilst trying to escape {killer}",
+                f"{victim} fell from a high place",
+                f"death.fell.accident.water"
+                f"{victim} was impaled on a stalagmite",
+                f"{victim} was squashed by a falling anvil",
+                f"{victim} went up in flames",
+                f"{victim} walked into fire whilst fighting {killer}",
+                f"{victim} burned to death",
+                f"{victim} tried to swim in lava"
+                f"{victim} was slain by {killer}",
+                f"{victim} was slain by {killer}",
+                f"{victim} suffocated in a wall",
+                f"{victim} was impaled by {killer}",
+                f"{victim} fell out of the world",
+                f"{victim} didn't want to live in the same world as {killer}",
+                f"{victim} withered away",
+                f"{victim} died",
+                f"{victim} was killed by magic"]
+        await ctx.send(embed=discord.Embed(description=random.choice(phrases),color=discord.Color.random()))
+
+    @commands.command()
+    async def roast(self,ctx):
+            random_lines = random.choice(open("text_files/roasts.txt", encoding="utf-8").readlines())
+            await ctx.send(embed=discord.Embed(description=random_lines, color=discord.Color.random()))   
+
+
+
+    @commands.command(aliases=['vcm'])
     async def vcmeme(self,ctx, *, meme: str):
         if meme != None:
             try:
                 channel = ctx.message.author.voice.channel
-                print(channel)
             except:
-                ctx.send("JOIN A CHANNEL FIRST!!!!")
+                await ctx.send(embed=discord.Embed(title="JOIN A CHANNEL FIRST!!!!"))
                 return
-            voice = get(bot.voice_clients, guild=ctx.guild)
+            voice = get(self.bot.voice_clients, guild=ctx.guild)
 
             if voice and voice.is_connected():
                 await voice.move_to(channel)
-                if "20th century" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/20th Century.mp3'))
-                elif "airhorn" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/AirHorn.mp3'))
-                    print("Airhorn.....")
-                elif "big pew pew" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Big pew pew.mp3'))
-
-                elif "censor" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/CENSOR BEEP.mp3'))
-
-                elif "denied" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/DENIED.mp3'))
-
-                elif "drum roll" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/DRUM ROLL.mp3'))
-
-                elif "dun dun dun" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/DUN DUN DUN.mp3'))
-
-                elif "elevator music" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Elevator Music.mp3'))
-
-                elif "headshot" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Headshot.mp3'))
-
-                elif "explosion" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/EXPLOSION.mp3'))
-                elif "hidden agenda" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/HIDDEN AGENDA.mp3'))
-
-                elif "huh" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Huh.mp3'))
-
-                elif "illuminati confirmed" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Illuminati Confirmed.mp3'))
-
-                elif "investigations" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/INVESTIGATIONS.mp3'))
-
-                elif "oof" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Oof.mp3'))
-
-                elif "pew" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/pew.mp3'))
-
-                elif "pew pew" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/pew pew.wav'))
-
-                elif "reee" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/REEEEE.m4a'))
-
-                elif "sad music" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/SAD MUSIC.mp3'))
-
-                elif "say what" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/SAY WHAT.mp3'))
-
-                elif "sneaky snitch" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/SNEAKY SNITCH.mp3'))
-
-                elif "stop right there" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/STOP RIGHT THERE.m4a'))
-
-                elif "surprise mf" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Surprise Mf.mp3'))
-
-                elif "why are you running" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Why are you running.mp3'))
-
-                elif "why you bully me" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Why you bully me.mp3'))
-
-                elif "wow" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/WOW.m4a'))
-
-                elif "yeet" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/YEET.m4a'))
-                elif "yay" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/YAY.mp3'))
-                elif "you got it dude" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/You got it dude.mp3'))
-                else:
-                    embed2 = discord.Embed(title=f"The meme {meme} was not found!",
-                                        description="Thanks for wasting my time!",
-                                        color=discord.Color.Red())
-                    embed2.add_field(
-                        f"If you would like the owners to add a voice meme, [click here](https://zeroandone.ml/contact/)")
-                    await ctx.send(embed=embed2)
-                    voice.disconnect()
-
             else:
                 voice = await channel.connect()
-                if "20th century" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/20th Century.mp3'))
-                elif "airhorn" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/AirHorn.mp3'))
-                    print("Airhorn.....")
-                elif "big pew pew" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Big pew pew.mp3'))
+            
+            if "20th century" in meme.lower() or "1" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/20th Century.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "censor" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/CENSOR BEEP.mp3'))
+            elif "airhorn" in meme.lower() or "2" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/AirHorn.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "denied" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/DENIED.mp3'))
+            elif "big pew pew" in meme.lower() or "3" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Big pew pew.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "drum roll" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/DRUM ROLL.mp3'))
+            elif "bye" in meme.lower() or "4" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Big pew pew.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "dun dun dun" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/DUN DUN DUN.mp3'))
+            elif "censor" in meme.lower() or "5" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/CENSOR BEEP.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "elevator music" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Elevator Music.mp3'))
+            elif "denied" in meme.lower() or "6" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/DENIED.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "headshot" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Headshot.mp3'))
+            elif "drum roll" in meme.lower() or "7" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/DRUM ROLL.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "explosion" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/EXPLOSION.mp3'))
-                elif "hidden agenda" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/HIDDEN AGENDA.mp3'))
+            elif "dun dun dun" in meme.lower() or "8" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/DUN DUN DUN.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "huh" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Huh.mp3'))
 
-                elif "illuminati confirmed" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Illuminati Confirmed.mp3'))
+            elif "elevator music" in meme.lower() or "9" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Elevator Music.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "investigations" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/INVESTIGATIONS.mp3'))
+            elif "headshot" in meme.lower() or "11" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Headshot.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "oof" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Oof.mp3'))
 
-                elif "pew" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/pew.mp3'))
+            elif "explosion" in meme.lower() or "10" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/EXPLOSION.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "pew pew" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/pew pew.wav'))
+                    
+            elif "hidden agenda" in meme.lower() or "12" in meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/HIDDEN AGENDA.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "reee" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/REEEEE.m4a'))
 
-                elif "sad music" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/SAD MUSIC.mp3'))
+            elif "huh" in meme.lower() or "13" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Huh.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "say what" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/SAY WHAT.mp3'))
+            elif "illuminati confirmed" in meme.lower() or "14" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Illuminati Confirmed.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "sneaky snitch" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/SNEAKY SNITCH.mp3'))
+            elif "investigations" in meme.lower() or "15" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/INVESTIGATIONS.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "stop right there" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/STOP RIGHT THERE.m4a'))
+            elif "oh hello there" in meme.lower() or "16" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/OH HELLO THERE.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "surprise mf" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Surprise Mf.mp3'))
+            elif "oof" in meme.lower() or "17" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Oof.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "why are you running" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Why are you running.mp3'))
+            elif "pew" in meme.lower() or "18" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/pew.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "why you bully me" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/Why you bully me.mp3'))
+            elif "pew pew" in meme.lower() or "20" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/pew pew.wav'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "wow" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/WOW.m4a'))
+            elif "reee" in meme.lower() or "19" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/REEEEE.m4a'))
+                await ctx.send('\N{OK HAND SIGN}')
 
-                elif "yeet" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/YEET.m4a'))
-                elif "yay" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/YAY.mp3'))
-                elif "you got it dude" in meme.lower():
-                    voice.play(discord.FFmpegPCMAudio(
-                        source='sounds/You got it dude.mp3'))
-                else:
-                    embed2 = discord.Embed(title=f"The meme {meme} was not found!",
-                                        description="Thanks for wasting my time!",
-                                        color=discord.Color.Red())
-                    embed2.add_field(
-                        f"If you would like the owners to add a voice meme, [click here](https://zeroandone.ml/contact/)")
-                    await ctx.send(embed=embed2)
-                    voice.disconnect()
+            elif "sad music" in meme.lower() or "21" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/SAD MUSIC.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
+
+            elif "say what" in meme.lower() or "22" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/SAY WHAT.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
+
+            elif "sneaky snitch" in meme.lower() or "23" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/SNEAKY SNITCH.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
+
+
+            elif "stop right there" in meme.lower() or "24" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/STOP RIGHT THERE.m4a'))
+                await ctx.send('\N{OK HAND SIGN}')
+
+            elif "surprise mf" in meme.lower() or "25" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Surprise Mf.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
+            elif "why are you running" in meme.lower() or "26" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Why are you running.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
+            elif "why you bully me" in meme.lower() or "27" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/Why you bully me.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
+
+            elif "wow" in meme.lower() or "28" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/WOW.m4a'))
+                await ctx.send('\N{OK HAND SIGN}')
+
+            elif "yeet" in meme.lower() or "30" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/YEET.m4a'))
+                await ctx.send('\N{OK HAND SIGN}')
+
+            elif "yay" in meme.lower() or "29" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/YAY.mp3'))
+
+                await ctx.send('\N{OK HAND SIGN}')
+
+
+            elif "you got it dude" in meme.lower() or "31" == meme:
+                voice.play(discord.FFmpegPCMAudio(
+                    source='sounds/You got it dude.mp3'))
+                await ctx.send('\N{OK HAND SIGN}')
+            else:
+                embed2 = discord.Embed(title=f"The meme {meme} was not found!",
+                                    description="Thanks for wasting my time!",
+                                    color=discord.Color.red())
+                embed2.add_field(name=f"Wrong Meme!", value="If you would like the owners to add a voice meme, [click here](https://zeroandone.ml/contact/)")
+                await ctx.send(embed=embed2)
+                await voice.disconnect()
 
 
     @vcmeme.error
@@ -950,11 +1029,64 @@ class Fun(commands.Cog):
             await ctx.send(embed=embed)
             await ctx.send(embed=embed2)
 
+        elif isinstance(error, discord.ext.commands.errors.CommandInvokeError):
+            await ctx.send(embed=discord.Embed(title="Sorry im already playing audio. Do !stop to stop it",color=discord.Color.random()))
 
         else:
             raise (error)
 
+    @commands.command(aliases=['leave', 'disconnect'])
+    async def shoo(self,ctx):
+        try:
+            channel = ctx.message.author.voice.channel
+            await ctx.voice_client.disconnect()
+            await ctx.send(embed=discord.Embed(description=f"Left {channel}",
+            color=discord.Color.random()))
+
+        except:
+            await ctx.send(embed=discord.Embed(title="You are not connected to a voice channel", color=discord.Color.random()
+            ))
+
     @commands.command()
+    async def pause(self,ctx):
+        try:
+            channel = ctx.message.author.voice.channel
+            voice = get(self.bot.voice_clients, guild=ctx.guild)
+            voice.pause()
+            await ctx.send(embed=discord.Embed(description=f"Paused playing Audio in {channel}",
+            color=discord.Color.random()))
+
+        except:
+            await ctx.send(embed=discord.Embed(title="You are not connected to a voice channel", color=discord.Color.random()
+            ))
+
+    @commands.command()
+    async def resume(self,ctx):
+        try:
+            channel = ctx.message.author.voice.channel
+            voice = get(self.bot.voice_clients, guild=ctx.guild)
+            voice.resume()
+            await ctx.send(embed=discord.Embed(description=f"Resumed playing Audio in {channel}",
+            color=discord.Color.random()))
+
+        except:
+            await ctx.send(embed=discord.Embed(title="You are not connected to a voice channel", color=discord.Color.random()
+            ))
+
+    @commands.command()
+    async def stop(self,ctx):
+        try:
+            channel = ctx.message.author.voice.channel
+            voice = get(self.bot.voice_clients, guild=ctx.guild)
+            voice.stop()
+            await ctx.send(embed=discord.Embed(description=f"Stopped playing Audio in {channel}",
+            color=discord.Color.random()))
+
+        except:
+            await ctx.send(embed=discord.Embed(title="You are not connected to a voice channel", color=discord.Color.random()
+            ))
+
+    @commands.command(aliases=['qu', 'q'])
     async def quote(self,ctx, quoter, *, quote):
         embed = discord.Embed(
             description=f"\"*{quote}*\""
@@ -1080,7 +1212,6 @@ class Fun(commands.Cog):
 
     @poll.error
     async def poll_error(self,ctx,error):
-        member = ctx.author
         if isinstance(error, commands.MissingRequiredArgument):
             embed = discord.Embed(title=f"Ah I fell you",
                                 description=f"This command is way too complex. Use {ctx.prefix}help poll",
@@ -1095,7 +1226,6 @@ class Fun(commands.Cog):
 
     @ascii.error
     async def ascii_error(self,ctx,error):
-        member = ctx.author
         if isinstance(error, commands.MissingRequiredArgument):
             embed = discord.Embed(title=f"Done!",
                                 description=f"Successfully converted *nothing* into a beautiful picture!\nNow try actually giving me something for me to use",
@@ -1113,6 +1243,28 @@ class Fun(commands.Cog):
         else:
             raise (error)
 
+    @emojify.error
+    async def emojify_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            await ctx.send(':regional_indicator_n::regional_indicator_o::regional_indicator_t::regional_indicator_h::regional_indicator_i::regional_indicator_n::regional_indicator_g: \t:regional_indicator_l::regional_indicator_m::regional_indicator_a::regional_indicator_o:')
+
+        else:
+            raise error
+
+    @spoilify.error
+    async def spoilify_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            await ctx.send(embed=discord.Embed(title=f"For god's sake",
+                                        description="What do you want me to spoil?",
+                                        color=discord.Color.random()))
+
+        elif isinstance(error, commands.errors.CommandInvokeError):
+            await ctx.send(embed=discord.Embed(title=f"For god's sake",
+                                        description="What do you want me to spoil and why are you trying to hide it?",
+                                        color=discord.Color.random()))
+
+        else:
+            raise error
 
     @act.error
     async def act_error(self,ctx,error):
@@ -1184,15 +1336,13 @@ class Fun(commands.Cog):
 
     @choose.error
     async def choose_error(self,ctx,error):
-        member = ctx.author
-        if isinstance(error, commands.MissingRequiredArgument):
-            if isinstance(error, commands.MissingRequiredArgument):
-                embed = discord.Embed(title=f"Alright, if that's what you wish",
-                                    description=f"I choose this particular non-existent thing over the other.",
-                                    color=discord.Color.random())
-                embed.set_footer(
-                    text="Don't really know what you will achieve with that knowledge")
-                await ctx.send(embed=embed)
+        if isinstance(error, commands.CommandInvokeError):
+            embed = discord.Embed(title=f"Alright, if that's what you wish",
+                                description=f"I choose this particular non-existent thing over the other.",
+                                color=discord.Color.random())
+            embed.set_footer(
+                text="Don't really know what you will achieve with that knowledge")
+            await ctx.send(embed=embed)
 
         else:
             raise (error)
