@@ -1,14 +1,3 @@
-<!--
-*** Thanks for checking out the Best-README-Template. If you have a suggestion
-*** that would make this better, please fork the repo and create a pull request
-*** or simply open an issue with the tag "enhancement".
-*** Thanks again! Now go create something AMAZING! :D
-***
-***
-***
-*** To avoid retyping too much info. Do a search and replace for the following:
-*** TechnoFrost27, chad-the-discord-bot, twitter_handle, zeronone13.5@gmail.com, Chad, project_description
--->
 
 
 [![Contributors][contributors-shield]][contributors-url]
@@ -172,5 +161,4 @@ Project Link: [https://github.com/TechnoFrost27/chad-the-discord-bot](https://gi
 [issues-url]: https://github.com/TechnoFrost27/chad-the-discord-bot/issues
 [license-shield]: https://img.shields.io/github/license/TechnoFrost27/repo.svg?style=for-the-badge
 [license-url]: https://github.com/TechnoFrost27/chad-the-discord-bot/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/TechnoFrost27
+
