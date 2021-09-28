@@ -30,10 +30,7 @@ You want to see the info of a user, "mimic" the user? We got ya
 You want to check wikipedia, dictionary, translate , the weather anywhere or urbandictionary for a word? WE GOT YA
 
 Well.... the list goes on and on and on but i guess you get the general idea.... So what are you waiting for? INVITE CHAD NOW GAMERS!
-    <br />
-    <a href="https://github.com/TechnoFrost27/chad-the-discord-bot"><strong>Explore the docs »</strong></a>
-    <br />
-    <br />
+    
     <a href="https://github.com/TechnoFrost27/chad-the-discord-bot">View Demo</a>
     ·
     <a href="https://github.com/TechnoFrost27/chad-the-discord-bot/issues">Report Bug</a>
