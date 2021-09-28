@@ -4,7 +4,7 @@
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
+
 
 
 
@@ -159,6 +159,5 @@ Project Link: [https://github.com/TechnoFrost27/chad-the-discord-bot](https://gi
 [stars-url]: https://github.com/TechnoFrost27/chad-the-discord-bot/stargazers
 [issues-shield]: https://img.shields.io/github/issues/TechnoFrost27/repo.svg?style=for-the-badge
 [issues-url]: https://github.com/TechnoFrost27/chad-the-discord-bot/issues
-[license-shield]: https://img.shields.io/github/license/TechnoFrost27/repo.svg?style=for-the-badge
-[license-url]: https://github.com/TechnoFrost27/chad-the-discord-bot/blob/master/LICENSE.txt
+
 
