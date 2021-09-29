@@ -157,13 +157,13 @@ Project Link: [https://github.com/TechnoFrost27/chad-the-discord-bot](https://gi
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/TechnoFrost27/repo.svg?flat-square
+[contributors-shield]: https://img.shields.io/github/contributors/TechnoFrost27/chad-the-discord-bot/repo.svg?flat-square
 [contributors-url]: https://github.com/TechnoFrost27/chad-the-discord-bot/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/TechnoFrost27/repo.svg?flat-squareflat-square
+[forks-shield]: https://img.shields.io/github/forks/TechnoFrost27/chad-the-discord-bot/repo.svg?flat-squareflat-square
 [forks-url]: https://github.com/TechnoFrost27/chad-the-discord-bot/network/members
-[stars-shield]: https://img.shields.io/github/stars/TechnoFrost27/repo.svg?flat-square
+[stars-shield]: https://img.shields.io/github/stars/TechnoFrost27/chad-the-discord-bot/repo.svg?flat-square
 [stars-url]: https://github.com/TechnoFrost27/chad-the-discord-bot/stargazers
-[issues-shield]: https://img.shields.io/github/issues/TechnoFrost27/repo.svg?flat-square
+[issues-shield]: https://img.shields.io/github/issues/TechnoFrost27/chad-the-discord-bot/repo.svg?flat-square
 [issues-url]: https://github.com/TechnoFrost27/chad-the-discord-bot/issues
 
 
