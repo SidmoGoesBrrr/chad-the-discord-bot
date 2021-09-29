@@ -4,11 +4,11 @@
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
-[![Discord Bots](https://top.gg/api/widget/864010316424806451.svg)(https://top.gg/bot/864010316424806451)
 
 
 
-
+[![Discord Bots](https://top.gg/api/widget/servers/864010316424806451.svg)(https://top.gg/bot/864010316424806451)
+[![Discord Bots](https://top.gg/api/widget/upvotes/864010316424806451.svg)(https://top.gg/bot/864010316424806451)
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
