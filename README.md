@@ -9,6 +9,7 @@
 
 [![Discord Bots](https://top.gg/api/widget/servers/864010316424806451.svg)](https://top.gg/bot/864010316424806451)
 [![Discord Bots](https://top.gg/api/widget/upvotes/864010316424806451.svg)](https://top.gg/bot/864010316424806451)
+[![Discord](https://img.shields.io/discord/869173101131337748?color=%235865F2&logo=discord&logoColor=white)](https://discord.gg/wTsj4DZhyZ) 
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
