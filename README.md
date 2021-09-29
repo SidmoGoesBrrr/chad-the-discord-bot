@@ -7,8 +7,8 @@
 
 
 
-[![Discord Bots](https://top.gg/api/widget/servers/864010316424806451.svg)(https://top.gg/bot/864010316424806451)
-[![Discord Bots](https://top.gg/api/widget/upvotes/864010316424806451.svg)(https://top.gg/bot/864010316424806451)
+[![Discord Bots](https://top.gg/api/widget/servers/864010316424806451.svg)](https://top.gg/bot/864010316424806451)
+[![Discord Bots](https://top.gg/api/widget/upvotes/864010316424806451.svg)](https://top.gg/bot/864010316424806451)
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
