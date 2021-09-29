@@ -4,7 +4,7 @@
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
-
+[![Discord Bots](https://top.gg/api/widget/864010316424806451.svg)(https://top.gg/bot/864010316424806451)
 
 
 
