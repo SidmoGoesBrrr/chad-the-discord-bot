@@ -61,47 +61,6 @@ bot.load_extension("uptime")
 dbl_token = os.getenv(dbl_token)
 bot.topggpy = topgg.DBLClient(bot, dbl_token, autopost=True)
 
-@bot.event
-async def on_message(message):
-    db = TinyDB('databases/blacklist.json')
-    member = message.author.id
-    try:
-        query = Query()
-        blacklisted_guild = db.search(query['guild_id'] == message.guild.id)
-        blacklisted_peeps = None
-        for i in range(0, len(blacklisted_guild)):
-            if str(member) in str(blacklisted_guild[i]):
-                blacklisted_peeps = blacklisted_guild[i]
-        if blacklisted_peeps is not None:
-            return
-    except:
-        print("It's a DM")
-
-    db2 = TinyDB('databases/afk.json')
-    query = Query()
-
-    for member in message.mentions:
-        if db2.search(query['afk_user'] == member.id):
-            value = str(
-                list(
-                    map(lambda entry: entry["reason"],
-                        db2.search(query['afk_user'] == member.id)))[0])
-            await message.channel.send(
-                embed=discord.Embed(title=f"{member.display_name} is currently afk",
-                                    description=f"Afk note is: {value}",
-                                    color=discord.Color.random()))
-
-    member = message.author
-    if db2.search(query['afk_user'] == member.id):
-        await message.channel.send(embed=discord.Embed(
-            title=f"{member.display_name} You typed a message!",
-            description=f"That means you ain't afk!\nWelcome back buddy.",
-            color=discord.Color.random()))
-
-        query = Query()
-        db2.remove(query.afk_user == member.id)
-    await bot.process_commands(message=message)
-
 
 @bot.command()
 async def load(ctx, *, module):
@@ -272,11 +231,6 @@ async def checkcog(ctx):
     else:
         await ctx.send(embed=discord.Embed(title="Nope you imposter", description="I dont take orders from peasants like you <a:ZOWumpusTongue:865559251764903946>", color=discord.Color.random()))
 
-
-
-@bot.event
-async def on_autopost_success():
-    print(f"Posted server count ({bot.topggpy.guild_count}))")
       
 token = os.getenv("DISCORD_BOT_SECRET")
 bot.run(token)

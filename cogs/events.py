@@ -184,10 +184,50 @@ class events(commands.Cog):
         embed.set_footer(text=f"Chad is currently in {len(self.bot.guilds)} servers")
         await channel.send(embed=embed)
 
-        
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        db = TinyDB('databases/blacklist.json')
+        member = message.author.id
+        try:
+            query = Query()
+            blacklisted_guild = db.search(query['guild_id'] == message.guild.id)
+            blacklisted_peeps = None
+            for i in range(0, len(blacklisted_guild)):
+                if str(member) in str(blacklisted_guild[i]):
+                    blacklisted_peeps = blacklisted_guild[i]
+            if blacklisted_peeps is not None:
+                return
+        except:
+            print("It's a DM")
 
+        db2 = TinyDB('databases/afk.json')
+        query = Query()
 
+        for member in message.mentions:
+            if db2.search(query['afk_user'] == member.id):
+                value = str(
+                    list(
+                        map(lambda entry: entry["reason"],
+                            db2.search(query['afk_user'] == member.id)))[0])
+                await message.channel.send(
+                    embed=discord.Embed(title=f"{member.display_name} is currently afk",
+                                        description=f"Afk note is: {value}",
+                                        color=discord.Color.random()))
 
+        member = message.author
+        if db2.search(query['afk_user'] == member.id):
+            await message.channel.send(embed=discord.Embed(
+                title=f"{member.display_name} You typed a message!",
+                description=f"That means you ain't afk!\nWelcome back buddy.",
+                color=discord.Color.random()))
+
+            query = Query()
+            db2.remove(query.afk_user == member.id)
+        await self.bot.process_commands(message=message)
+
+    @commands.Cog.listener()
+    async def on_autopost_success(self):
+        print(f"Posted server count ({self.bot.topggpy.guild_count}))")
 
 
     @commands.Cog.listener()
