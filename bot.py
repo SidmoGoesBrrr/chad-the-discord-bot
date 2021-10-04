@@ -57,7 +57,7 @@ for filename in os.listdir('./cogs'):
         except commands.ExtensionError as e:
             print(f'{e.__class__.__name__}: {e}')
             
-bot.load_extension("uptime")
+bot.load_extension("cogs.uptime")
 dbl_token = os.getenv(dbl_token)
 bot.topggpy = topgg.DBLClient(bot, dbl_token, autopost=True)
 
