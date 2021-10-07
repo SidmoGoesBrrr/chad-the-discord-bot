@@ -3,11 +3,12 @@ import asyncio
 from discord.ext import commands
 import random
 import math
+
+
 class Games(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    
     @commands.command(aliases=['g'])
     async def guess(self, ctx, lower, upper):
         boolean = False
@@ -15,28 +16,28 @@ class Games(commands.Cog):
         upper = int(upper)
         if upper < lower:
             embed = discord.Embed(title="Nope :satisfied:",
-                                description="Your upper limit CANNOT BE less then your lower limit smh")
+                                  description="Your upper limit CANNOT BE less then your lower limit smh")
             embed.set_footer(text="Like, wth dude")
             embed.color = discord.Color.random()
             await ctx.send(embed=embed)
             return
         if upper == lower:
             embed = discord.Embed(title="Nope :satisfied:",
-                                description="Think about it.\nIf your lower limit is the same as the upper limit, you can't really guess anything.")
+                                  description="Think about it.\nIf your lower limit is the same as the upper limit, you can't really guess anything.")
             embed.set_footer(text=f"Basically, its obviously {upper} rn")
             embed.color = discord.Color.random()
             await ctx.send(embed=embed)
             return
         if lower < 0:
             embed = discord.Embed(title="Nope :satisfied:",
-                                description="Your limits can only be positive numbers.")
+                                  description="Your limits can only be positive numbers.")
             embed.set_footer(text="Dont' even THINK about it")
             await ctx.send(embed=embed)
             embed.color = discord.Color.random()
             return
         if upper > 10000:
             embed = discord.Embed(title="Nope :satisfied:",
-                                description="Your upper limit can only be equal to or less than 10000.")
+                                  description="Your upper limit can only be equal to or less than 10000.")
             embed.set_footer(text="Dont' even THINK about it")
             embed.color = discord.Color.random()
             await ctx.send(embed=embed)
@@ -94,15 +95,15 @@ class Games(commands.Cog):
 
         if boolean is False:
             embed = discord.Embed(title="Better luck next time!",
-                                description=f"The number was {x}")
+                                  description=f"The number was {x}")
             embed.color = discord.Color.random()
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def rps(self,ctx, *, msg=None):
+    async def rps(self, ctx, *, msg=None):
         if msg is None:
             await ctx.send(embed=discord.Embed(title="You might wanna", description="CHOOSE SOMETHING!!",
-                                            color=discord.Color.random()))
+                                               color=discord.Color.random()))
 
             return
 
@@ -179,9 +180,10 @@ class Games(commands.Cog):
 
 
         elif isinstance(msg, discord.Member):
-            embed1 = discord.Embed(title=f"Hello!! So you have challenged {msg.name} to an epic rock paper scissor battle!",
-                                description="Enter your choice from Rock,Paper,Scissors here",
-                                color=discord.Color.random())
+            embed1 = discord.Embed(
+                title=f"Hello!! So you have challenged {msg.name} to an epic rock paper scissor battle!",
+                description="Enter your choice from Rock,Paper,Scissors here",
+                color=discord.Color.random())
             embed2 = discord.Embed(
                 title=f"Hello! So you have been challenged by {ctx.author.name} to an epic rock paper scissor battle!",
                 description="Enter your choice from Rock, Paper or Scissors here (if you wanna play)",
@@ -189,20 +191,20 @@ class Games(commands.Cog):
             embed2.set_footer(text="Otherwise just ignore me like everyone else (SOB SOB)")
             if msg.bot:
                 embed = discord.Embed(title=f"This is a bot.",
-                                    description=f"I seriously don't know how you expect a bot to play rock paper scissors with you WHEN IT CAN'T EVEN DM YOU BACK",
-                                    color=discord.Color.random())
+                                      description=f"I seriously don't know how you expect a bot to play rock paper scissors with you WHEN IT CAN'T EVEN DM YOU BACK",
+                                      color=discord.Color.random())
                 embed.set_footer(text="People expect too much from my kind")
                 await ctx.send(embed=embed)
                 return
 
-            if msg==ctx.author:
+            if msg == ctx.author:
                 embed = discord.Embed(title=f"Oh you lonely kid",
-                                    description=f"If you got no friends to play with, try `{ctx.prefix}rock` or something",
-                                    color=discord.Color.random())
+                                      description=f"If you got no friends to play with, try `{ctx.prefix}rock` or something",
+                                      color=discord.Color.random())
                 embed.set_footer(text="People expect too much from my kind")
                 await ctx.send(embed=embed)
                 return
-                
+
             await msg.send(embed=embed2)
             await ctx.author.send(embed=embed1)
             await ctx.send("<a:ZO_DMS:871341236236193792>")
@@ -287,17 +289,19 @@ class Games(commands.Cog):
 
             except asyncio.TimeoutError:
                 await ctx.send(embed=discord.Embed(title="That kid didn't answer in time",
-                                                description="THEY IGNORED MEEEEE <a:ZO_Cry:871340549725102081>", color=discord.Color.random()))
+                                                   description="THEY IGNORED MEEEEE <a:ZO_Cry:871340549725102081>",
+                                                   color=discord.Color.random()))
 
         else:
             await ctx.send(embed=discord.Embed(title="You might wanna", description="CHOOSE SOMETHING USEFUL",
-                                            color=discord.Color.random()))
+                                               color=discord.Color.random()))
 
     @commands.command(aliases=['oddeven', 'oe'])
-    async def oddeve(self,ctx, *, msg=None):
+    async def oddeve(self, ctx, *, msg=None):
         if msg is None:
-            await ctx.send(embed=discord.Embed(title="You might wanna", description="CHOOSE SOMETHING!!\n try odd or even",
-                                            color=discord.Color.random()))
+            await ctx.send(
+                embed=discord.Embed(title="You might wanna", description="CHOOSE SOMETHING!!\n try odd or even",
+                                    color=discord.Color.random()))
             return
 
         if '@' in msg:
@@ -325,12 +329,14 @@ class Games(commands.Cog):
 
             def check1(message):
                 return message.author == ctx.author
+
             try:
                 msg1 = await self.bot.wait_for('message', check=check1, timeout=60)
                 num1 = int(msg1.content)
                 if num1 >= 10 or num1 < 0:
                     await ctx.send(
-                        embed=discord.Embed(title="WHAT PART OF 0 TO 9 DO YOU NOT UNDERSTAND", color=discord.Color.random()))
+                        embed=discord.Embed(title="WHAT PART OF 0 TO 9 DO YOU NOT UNDERSTAND",
+                                            color=discord.Color.random()))
                     return
 
                 n = i = 0
@@ -340,27 +346,27 @@ class Games(commands.Cog):
 
                 sum = int(num1) + int(n)
                 await ctx.send(embed=discord.Embed(title=f"I played {n} and you played {num1} and it adds up to {sum}",
-                                                color=discord.Color.random()))
+                                                   color=discord.Color.random()))
 
                 if (sum % 2 == 0):
                     if euro == "even":
                         await ctx.send(embed=discord.Embed(title="Result is even", description="You win! \n GGs",
-                                                        color=discord.Color.random()))
+                                                           color=discord.Color.random()))
 
                     else:
                         await ctx.send(embed=discord.Embed(title="Result Is even", description="You lose! \n sed leef",
-                                                        color=discord.Color.random()))
+                                                           color=discord.Color.random()))
 
                 else:
                     if euro == "even":
                         await ctx.send(embed=discord.Embed(title="Result Is Odd", description="You lose! \n sed leef",
-                                                        color=discord.Color.random()))
+                                                           color=discord.Color.random()))
 
                     else:
                         await ctx.send(embed=discord.Embed(title="Result Is Odd", description="You win! \n GGs",
-                                                        color=discord.Color.random()))
+                                                           color=discord.Color.random()))
             except asyncio.exceptions.TimeoutError:
-              await ctx.send("Timed out :(")
+                await ctx.send("Timed out :(")
 
 
 
@@ -380,20 +386,19 @@ class Games(commands.Cog):
 
             if msg.bot:
                 embed = discord.Embed(title=f"This is a bot.",
-                                    description=f"I seriously don't know how you expect a bot to play oddeve with you WHEN IT CAN'T EVEN DM YOU BACK",
-                                    color=discord.Color.random())
+                                      description=f"I seriously don't know how you expect a bot to play oddeve with you WHEN IT CAN'T EVEN DM YOU BACK",
+                                      color=discord.Color.random())
                 embed.set_footer(text="People expect too much from my kind")
                 await ctx.send(embed=embed)
                 return
 
-            if msg==ctx.author:
+            if msg == ctx.author:
                 embed = discord.Embed(title=f"Oh you lonely kid",
-                                    description=f"If you got no friends to play with, try `{ctx.prefix}rock` or something",
-                                    color=discord.Color.random())
+                                      description=f"If you got no friends to play with, try `{ctx.prefix}rock` or something",
+                                      color=discord.Color.random())
                 embed.set_footer(text="People expect too much from my kind")
                 await ctx.send(embed=embed)
                 return
-
 
             embed3 = discord.Embed(
                 title=f"Hey {ctx.author.display_name}, as you have started the match, you get to choose....",
@@ -423,12 +428,12 @@ class Games(commands.Cog):
                     return
             except asyncio.TimeoutError:
                 await ctx.send(embed=discord.Embed(title="You didn't answer in time",
-                                                description="HOW DARE YOU IGNORED ME <a:ZO_Cry:871340549725102081>"))
+                                                   description="HOW DARE YOU IGNORED ME <a:ZO_Cry:871340549725102081>"))
                 return
 
             embed1 = discord.Embed(title=f"Hello!! So you have challenged {msg.name} to an epic odds and evens battle!",
-                                description=f"Enter your number from 0 to 9 here\n And remember, you are {challenger}",
-                                color=discord.Color.random())
+                                   description=f"Enter your number from 0 to 9 here\n And remember, you are {challenger}",
+                                   color=discord.Color.random())
 
             embed2 = discord.Embed(
                 title=f"Hello!! So you have been challenged by {ctx.author.name} to an odds and evens battle!!",
@@ -450,7 +455,8 @@ class Games(commands.Cog):
 
                 if playerno >= 10 or playerno < 0 or challengerno >= 10 or challengerno < 0:
                     await ctx.send(embed=discord.Embed(title="WHAT PART OF 0 TO 9 DO YOU NOT UNDERSTAND",
-                                                    description="You ruined the game man", color=discord.Color.random()))
+                                                       description="You ruined the game man",
+                                                       color=discord.Color.random()))
                     return
 
                 sum = int(challengerno) + int(playerno)
@@ -466,7 +472,8 @@ class Games(commands.Cog):
 
                     else:
                         await ctx.send(
-                            embed=discord.Embed(title="Result Is even", description=f"{challengerName} wins! \n Poggers",
+                            embed=discord.Embed(title="Result Is even",
+                                                description=f"{challengerName} wins! \n Poggers",
                                                 color=discord.Color.random()))
 
                 else:
@@ -483,20 +490,19 @@ class Games(commands.Cog):
 
             except asyncio.TimeoutError:
                 await ctx.send(embed=discord.Embed(title="That kid didn't answer in time",
-                                                description="THEY IGNORED MEEEEE <a:ZO_Cry:871340549725102081>"))
+                                                   description="THEY IGNORED MEEEEE <a:ZO_Cry:871340549725102081>"))
 
         else:
             await ctx.send(embed=discord.Embed(title="You might wanna", description="CHOOSE SOMETHING USEFUL",
-                                            color=discord.Color.random()))
-
+                                               color=discord.Color.random()))
 
     @rps.error
-    async def rps_error(self,ctx,error):
+    async def rps_error(self, ctx, error):
         member = ctx.author
         if isinstance(error, commands.MemberNotFound):
             embed = discord.Embed(title=f"Ok no",
-                                description=f"Reminding you that playing rps with an imaginary user is not allowed.... Just play singleplayer mate",
-                                color=discord.Color.random())
+                                  description=f"Reminding you that playing rps with an imaginary user is not allowed.... Just play singleplayer mate",
+                                  color=discord.Color.random())
             embed.set_footer(text="Kids these days...")
             await ctx.send(embed=embed)
 
@@ -504,20 +510,20 @@ class Games(commands.Cog):
             raise (error)
 
     @oddeve.error
-    async def oddeve_error(self,ctx,error):
+    async def oddeve_error(self, ctx, error):
         member = ctx.author
         if isinstance(error, commands.MemberNotFound):
             embed = discord.Embed(title=f"Ok no",
-                                description=f"Reminding you that playing with an imaginary user is not allowed.... Just play singleplayer mate",
-                                color=discord.Color.random())
+                                  description=f"Reminding you that playing with an imaginary user is not allowed.... Just play singleplayer mate",
+                                  color=discord.Color.random())
 
             embed.set_footer(text="Kids these days...")
             await ctx.send(embed=embed)
 
         elif isinstance(error, commands.errors.CommandInvokeError):
             embed = discord.Embed(title=f"No shit",
-                                description=f"I take numbers only for your choice",
-                                color=discord.Color.random())
+                                  description=f"I take numbers only for your choice",
+                                  color=discord.Color.random())
             embed.set_footer(text="Kids these days...")
             await ctx.send(embed=embed)
 
@@ -525,24 +531,24 @@ class Games(commands.Cog):
             raise (error)
 
     @guess.error
-    async def guess_error(self,ctx,error):
+    async def guess_error(self, ctx, error):
         member = ctx.author
         if isinstance(error, commands.MissingRequiredArgument):
             embed = discord.Embed(title=f"Do you want to sit here FOREVER",
-                                description=f"Seriously dude, I need both an upper and a lower limit.",
-                                color=discord.Color.random())
+                                  description=f"Seriously dude, I need both an upper and a lower limit.",
+                                  color=discord.Color.random())
             embed.set_footer(text="Imagine guessing a number in infinity")
             await ctx.send(embed=embed)
         elif isinstance(error, commands.errors.CommandInvokeError):
             embed = discord.Embed(title=f"Do you want to sit here FOREVER",
-                                description=f"Seriously dude, I need it to be in numbers please.",
-                                color=discord.Color.random())
+                                  description=f"Seriously dude, I need it to be in numbers please.",
+                                  color=discord.Color.random())
             embed.set_footer(text="Imagine guessing a number in infinity")
             await ctx.send(embed=embed)
 
         else:
             raise (error)
 
-            
+
 def setup(bot):
     bot.add_cog(Games(bot))
