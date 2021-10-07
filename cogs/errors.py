@@ -1,10 +1,8 @@
 import logging
 from traceback import format_exception
-
+from tinydb import TinyDB, Query
 import discord
 from discord.ext import commands
-from tinydb import TinyDB, Query
-
 
 def checkping(guild_id_var):
     db = TinyDB('databases/pings.json')
@@ -20,11 +18,15 @@ class Errors(commands.Cog):
         self.bot = bot
         self.logger = logging.getLogger(__name__)
 
+
+    
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx, err):
 
         if hasattr(ctx.command, 'on_error'):
             return
+
 
         if isinstance(err, commands.ConversionError):
             await ctx.send(err)
@@ -65,7 +67,7 @@ class Errors(commands.Cog):
             await ctx.send(
                 "An error occurred while I was trying to execute a task. Are you sure I have the correct permissions?"
             )
-
+        
         elif isinstance(err, discord.errors.Forbidden):
             print("Forbidden, sad")
 
@@ -74,8 +76,10 @@ class Errors(commands.Cog):
                 f"`{ctx.command.qualified_name}` can only be used {err.number} command at a time under {str(err.per)}"
             )
 
+
         elif isinstance(err, commands.errors.CommandNotFound):
             pass
+
 
         self.logger.error("".join(format_exception(err, err, err.__traceback__)))
 

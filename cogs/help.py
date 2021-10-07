@@ -7,10 +7,11 @@ class Help(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+
     @commands.command()
     async def help(self, ctx, command=None):
         def check(reaction, user):
-            return user == ctx.author and ctx.message.id == reaction.message.id and str(reaction.emoji) in ["◀️", "▶️"]
+            return user == ctx.author and ctx.message.id==reaction.message.id and str(reaction.emoji) in ["◀️", "▶️"]
 
         if command is None:
             embed = discord.Embed(title="Help", colour=discord.Color.random())
@@ -103,18 +104,18 @@ class Help(commands.Cog):
                 inline=False)
             help_utils_2.set_footer(text="Page 2 of 4")
             help_utils_2.color = discord.Color.random()
-
+            
             help_utils_3 = discord.Embed(title="Utilities")
             help_utils_3.add_field(
-                name="Snipe",
-                value=
-                f"Allows You to restore the last deleted message of the channel.\n{ctx.prefix}help snipe",
-                inline=False)
+            name="Snipe",
+            value=
+            f"Allows You to restore the last deleted message of the channel.\n{ctx.prefix}help snipe",
+            inline=False)
             help_utils_3.add_field(
-                name="Snowflake",
-                value=
-                f"Find out the creation date of ANYTHING with its ID.",
-                inline=False)
+            name="Snowflake",
+            value=
+            f"Find out the creation date of ANYTHING with its ID.",
+            inline=False)
             help_utils_3.set_footer(text="Page 3 of 4")
             help_utils_3.color = discord.Color.random()
 
@@ -158,12 +159,12 @@ class Help(commands.Cog):
                 def check(reaction, user):
                     return reaction.message.id == util_message.id and user == ctx.author and str(reaction.emoji) in [
                         "◀️", "▶️"
-                    ]
+                    ] 
 
                 try:
                     reaction, user = await self.bot.wait_for("reaction_add",
-                                                             timeout=300,
-                                                             check=check)
+                                                            timeout=300,
+                                                            check=check)
 
                     if str(reaction.emoji) == "▶️":
                         page += 1
@@ -303,12 +304,12 @@ class Help(commands.Cog):
                 def check(reaction, user):
                     return reaction.message.id == mod_message.id and user == ctx.author and str(reaction.emoji) in [
                         "◀️", "▶️"
-                    ]
+                    ] 
 
                 try:
                     reaction, user = await self.bot.wait_for("reaction_add",
-                                                             timeout=300,
-                                                             check=check)
+                                                            timeout=300,
+                                                            check=check)
 
                     if str(reaction.emoji) == "▶️":
                         page += 1
@@ -353,108 +354,108 @@ class Help(commands.Cog):
                     print("Timed out oops")
 
         elif command.lower() == "information" or command.lower() == "info":
-            page = 1
-            pages = 2
-            help_info_1 = discord.Embed(title="Information")
-            help_info_1.add_field(
-                name="Dictionary",
-                value=
-                f"Finds dictionary meanings, synonyms and antonyms.\n{ctx.prefix}help dictionary",
-                inline=False)
-            help_info_1.add_field(
-                name="Translate",
-                value=
-                f"Translates a word into any language needed.\n{ctx.prefix}help translate",
-                inline=False)
-            help_info_1.add_field(
-                name="Google",
-                value=
-                f"Allowes you to google anything you want.\n{ctx.prefix}help google",
-                inline=False)
-            help_info_1.add_field(
-                name="Let Me Google That For You",
-                value=
-                f"Uses the LMGTFY API to find the answer to your queries.\n{ctx.prefix}help lmgtfy",
-                inline=False)
-            help_info_1.set_footer(text="Page 1 of 2")
-            help_info_1.color = discord.Color.random()
+          page = 1
+          pages = 2
+          help_info_1 = discord.Embed(title="Information")
+          help_info_1.add_field(
+              name="Dictionary",
+              value=
+              f"Finds dictionary meanings, synonyms and antonyms.\n{ctx.prefix}help dictionary",
+              inline=False)
+          help_info_1.add_field(
+              name="Translate",
+              value=
+              f"Translates a word into any language needed.\n{ctx.prefix}help translate",
+              inline=False)
+          help_info_1.add_field(
+              name="Google",
+              value=
+              f"Allowes you to google anything you want.\n{ctx.prefix}help google",
+              inline=False)
+          help_info_1.add_field(
+              name="Let Me Google That For You",
+              value=
+              f"Uses the LMGTFY API to find the answer to your queries.\n{ctx.prefix}help lmgtfy",
+              inline=False)
+          help_info_1.set_footer(text="Page 1 of 2")
+          help_info_1.color = discord.Color.random()
 
-            help_info_2 = discord.Embed(title="Information")
-            help_info_2.add_field(
-                name="Weather",
-                value=
-                f"Gives you the current weather of a place.\n{ctx.prefix}help weather",
-                inline=False)
-            help_info_2.add_field(
-                name="Wiki",
-                value=f"Searches up the Wikipedia for you.\n{ctx.prefix}help wiki",
-                inline=False)
-            help_info_2.add_field(
-                name="UrbanDictionary",
-                value=
-                f"Allows you to access the Urban Dictionary.\n{ctx.prefix}help urban",
-                inline=False)
-            help_info_2.add_field(
-                name="Youtube",
-                value=
-                f"Let's you use YouTube through discord itself!.\n{ctx.prefix}help youtube",
-                inline=False)
-            help_info_2.set_footer(text="Page 2 of 2")
-            help_info_2.color = discord.Color.random()
-            info_message = await ctx.send(embed=help_info_1)
+          help_info_2 = discord.Embed(title="Information")
+          help_info_2.add_field(
+              name="Weather",
+              value=
+              f"Gives you the current weather of a place.\n{ctx.prefix}help weather",
+              inline=False)
+          help_info_2.add_field(
+              name="Wiki",
+              value=f"Searches up the Wikipedia for you.\n{ctx.prefix}help wiki",
+              inline=False)
+          help_info_2.add_field(
+              name="UrbanDictionary",
+              value=
+              f"Allows you to access the Urban Dictionary.\n{ctx.prefix}help urban",
+              inline=False)
+          help_info_2.add_field(
+              name="Youtube",
+              value=
+              f"Let's you use YouTube through discord itself!.\n{ctx.prefix}help youtube",
+              inline=False)
+          help_info_2.set_footer(text="Page 2 of 2")
+          help_info_2.color = discord.Color.random()
+          info_message = await ctx.send(embed=help_info_1)
 
-            await info_message.add_reaction("◀️")
-            await info_message.add_reaction("▶️")
-            while True:
+          await info_message.add_reaction("◀️")
+          await info_message.add_reaction("▶️")
+          while True:
 
-                def check(reaction, user):
+              def check(reaction, user):
                     return reaction.message.id == info_message.id and user == ctx.author and str(reaction.emoji) in [
                         "◀️", "▶️"
-                    ]
+                    ] 
 
-                try:
-                    reaction, user = await self.bot.wait_for("reaction_add",
-                                                             timeout=300,
-                                                             check=check)
+              try:
+                  reaction, user = await self.bot.wait_for("reaction_add",
+                                                          timeout=300,
+                                                          check=check)
 
-                    if str(reaction.emoji) == "▶️":
-                        page += 1
-                        if page == pages + 1:
-                            page = 1
-                        try:
-                            await info_message.remove_reaction(reaction, user)
-                        except:
-                            print("Could not remove reaction in help")
+                  if str(reaction.emoji) == "▶️":
+                      page += 1
+                      if page == pages + 1:
+                          page = 1
+                      try:
+                          await info_message.remove_reaction(reaction, user)
+                      except:
+                          print("Could not remove reaction in help")
 
-                    elif str(reaction.emoji) == "◀️":
-                        page -= 1
-                        if page == 0:
-                            page = pages
-                        try:
-                            await info_message.remove_reaction(reaction, user)
-                        except:
-                            print("Could not remove reaction in help")
+                  elif str(reaction.emoji) == "◀️":
+                      page -= 1
+                      if page == 0:
+                          page = pages
+                      try:
+                          await info_message.remove_reaction(reaction, user)
+                      except:
+                          print("Could not remove reaction in help")
 
-                    else:
-                        try:
-                            await info_message.remove_reaction(reaction, user)
-                        except:
-                            print("Could not remove reaction in help")
+                  else:
+                      try:
+                          await info_message.remove_reaction(reaction, user)
+                      except:
+                          print("Could not remove reaction in help")
 
-                    if page == 1:
-                        try:
-                            await info_message.edit(embed=help_info_1)
-                        except:
-                            print("Could not edit")
+                  if page == 1:
+                      try:
+                          await info_message.edit(embed=help_info_1)
+                      except:
+                          print("Could not edit")
 
-                    elif page == 2:
-                        try:
-                            await info_message.edit(embed=help_info_2)
-                        except:
-                            print("Could not edit")
-                    pass
-                except asyncio.TimeoutError:
-                    print("Timed out oops")
+                  elif page == 2:
+                      try:
+                          await info_message.edit(embed=help_info_2)
+                      except:
+                          print("Could not edit")
+                  pass
+              except asyncio.TimeoutError:
+                  print("Timed out oops")
 
         elif command.lower() == "nerd":
             page = 1
@@ -524,7 +525,7 @@ class Help(commands.Cog):
                 name="Ask A Question",
                 value=f"Allows you to ask me any random question.\n{ctx.prefix}help question",
                 inline=False)
-
+            
             help_nerd_3.set_footer(text="Page 3 of 4")
             help_nerd_3.color = discord.Color.random()
 
@@ -557,7 +558,7 @@ class Help(commands.Cog):
                 name="Cot",
                 value=f"Gives you info about cot\n{ctx.prefix}cot (this feature has no help function)",
                 inline=False)
-
+            
             help_nerd_4.set_footer(text="Page 4 of 4")
             help_nerd_4.color = discord.Color.random()
             nerd_message = await ctx.send(embed=help_nerd_1)
@@ -569,12 +570,12 @@ class Help(commands.Cog):
                 def check(reaction, user):
                     return reaction.message.id == nerd_message.id and user == ctx.author and str(reaction.emoji) in [
                         "◀️", "▶️"
-                    ]
+                    ] 
 
                 try:
                     reaction, user = await self.bot.wait_for("reaction_add",
-                                                             timeout=300,
-                                                             check=check)
+                                                            timeout=300,
+                                                            check=check)
 
                     if str(reaction.emoji) == "▶️":
                         page += 1
@@ -746,12 +747,12 @@ class Help(commands.Cog):
                 def check(reaction, user):
                     return reaction.message.id == fun_message.id and user == ctx.author and str(reaction.emoji) in [
                         "◀️", "▶️"
-                    ]
+                    ] 
 
                 try:
                     reaction, user = await self.bot.wait_for("reaction_add",
-                                                             timeout=300,
-                                                             check=check)
+                                                            timeout=300,
+                                                            check=check)
 
                     if str(reaction.emoji) == "▶️":
                         page += 1
@@ -815,7 +816,7 @@ class Help(commands.Cog):
                 f"Lets you play odd eve with me **OR** your friends.n(cricket version coming out soon)\n{ctx.prefix}help oddeve",
                 inline=False)
             help_games_1.add_field(name="More games coming soon!",
-                                   value=f"You better believe it!")
+                                  value=f"You better believe it!")
             help_games_1.set_footer(text="Page 1 of 1")
             help_games_1.color = discord.Color.random()
 
@@ -1433,7 +1434,7 @@ class Help(commands.Cog):
                 text=
                 "The urban dict be lollers (I mean try searching your own name)")
             await ctx.send(embed=embed)
-
+          
         elif command.lower() == 'youtube':
             embed = discord.Embed(
                 title="Help Youtube",

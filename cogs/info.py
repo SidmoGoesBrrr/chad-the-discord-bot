@@ -16,8 +16,6 @@ from bs4 import BeautifulSoup
 import shutil
 from bs4 import BeautifulSoup
 import datetime
-
-
 class Info(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -82,7 +80,6 @@ class Info(commands.Cog):
     @commands.command(aliases=['trans', 'tran'])
     async def translate(self, ctx, *, keyword):
         translator = Translator()
-
         def check(translate_to):
             return ctx.author == translate_to.author and translate_to.channel == ctx.channel
 
@@ -112,7 +109,7 @@ class Info(commands.Cog):
                                   color=discord.Color.random())
         else:
             embed = discord.Embed(title='<https://www.google.com/search?q={}>'
-                                  .format(urllib.parse.quote_plus(searchquery)),
+                            .format(urllib.parse.quote_plus(searchquery)),
                                   color=discord.Color.random())
         embed.set_footer(text=f"Information requested by {ctx.author.display_name}.")
         embed.set_thumbnail(url=ctx.author.avatar_url)
@@ -126,7 +123,7 @@ class Info(commands.Cog):
         embed.set_footer(text=f"Information requested by {ctx.author.display_name}.")
         embed.set_thumbnail(url=ctx.author.avatar_url)
         await ctx.send(embed=embed)
-
+      
     @commands.command()
     async def wiki(self, ctx, *, question):
         try:
@@ -142,9 +139,9 @@ class Info(commands.Cog):
         except:
             await ctx.send(f"Could not find wikipedia results for: {question}")
 
-        await ctx.send(embed=discord.Embed(title=f"Chad has been online for:",
-                                           description=f"{text}<a:zo_tick_anim:886924589546995803>",
-                                           color=discord.Color.random()))
+    
+
+        await ctx.send(embed=discord.Embed(title=f"Chad has been online for:",description=f"{text}<a:zo_tick_anim:886924589546995803>",color=discord.Color.random()))
 
     @commands.command(aliases=['climate', 'w'])
     async def weather(self, ctx, *, place):
@@ -189,7 +186,7 @@ class Info(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=['urb'])
-    async def urban(self, ctx, *, keyword: str):
+    async def urban(self,ctx, *, keyword: str):
         try:
             list = (urbandict.define(keyword))
             embed = discord.Embed(
@@ -200,50 +197,51 @@ class Info(commands.Cog):
                                 inline=False)
             await ctx.send(embed=embed)
         except:
-            await ctx.send(
-                embed=discord.Embed(title=f"Sorry mate i couldn't find sh*t for", description=f"```{keyword}```",
-                                    color=discord.Color.random()))
+            await ctx.send(embed=discord.Embed(title=f"Sorry mate i couldn't find sh*t for", description=f"```{keyword}```",
+                                               color=discord.Color.random()))
 
     @commands.command(aliases=['yt'])
     async def youtube(self, ctx, *, query: str):
         req = requests.get(
             ('https://www.googleapis.com/youtube/v3/search?part=id&maxResults=1'
-             '&order=relevance&q={}&relevanceLanguage=en&safeSearch=moderate&type=video'
-             '&videoDimension=2d&fields=items%2Fid%2FvideoId&key=')
+            '&order=relevance&q={}&relevanceLanguage=en&safeSearch=moderate&type=video'
+            '&videoDimension=2d&fields=items%2Fid%2FvideoId&key=')
             .format(query) + os.getenv(yt_api))
         try:
-            vid_url = "https://www.youtube.com/watch?v={}".format(req.json()['items'][0]['id']['videoId'])
+            vid_url="https://www.youtube.com/watch?v={}".format(req.json()['items'][0]['id']['videoId'])
             await ctx.send(f"Here is the video: \n**{vid_url}**")
         except:
-            await ctx.send(
-                embed=discord.Embed(title="Sorry mate, i couldn't find sh*t for", description=f"```{query}```",
-                                    color=discord.Color.random()))
+          await ctx.send(embed=discord.Embed(title="Sorry mate, i couldn't find sh*t for",description=f"```{query}```",color=discord.Color.random()))
+
+
+        
 
     @dictionary.error
-    async def dict_error(self, ctx, error):
+    async def dict_error(self,ctx,error):
         if isinstance(error, commands.MissingRequiredArgument):
             embed = discord.Embed(title=f"Alright.",
-                                  description=f"The definition of nothing is ___. It probably has synonyms and antonyms, but idrc.",
-                                  color=discord.Color.random())
+                                description=f"The definition of nothing is ___. It probably has synonyms and antonyms, but idrc.",
+                                color=discord.Color.random())
             embed.set_footer(text="Im not stupid")
             await ctx.send(embed=embed)
 
         else:
             raise (error)
 
+
     @translate.error
-    async def translate_error(self, ctx, error):
+    async def translate_error(self,ctx,error):
         if isinstance(error, commands.MissingRequiredArgument):
             embed = discord.Embed(title=f"Why is this difficult",
-                                  description=f"All you gotta do, is use {ctx.prefix}help translate and do what it says.",
-                                  color=discord.Color.random())
+                                description=f"All you gotta do, is use {ctx.prefix}help translate and do what it says.",
+                                color=discord.Color.random())
             embed.set_footer(text="Why you being like this")
             await ctx.send(embed=embed)
 
         elif isinstance(error, commands.errors.CommandInvokeError):
             embed = discord.Embed(title=f"Well that didn't work.....",
-                                  description=f"Probably u put in some invalid shit",
-                                  color=discord.Color.random())
+                                description=f"Probably u put in some invalid shit",
+                                color=discord.Color.random())
             embed.set_footer(text="Failed! Just like your life")
             await ctx.send(embed=embed)
 
@@ -251,71 +249,75 @@ class Info(commands.Cog):
             raise (error)
 
     @urban.error
-    async def urban_error(self, ctx, error):
+    async def urban_error(self,ctx,error):
         if isinstance(error, commands.MissingRequiredArgument):
             embed = discord.Embed(title=f"I can't believe it.",
-                                  description=f"This was the place where i really didn't expect an error. Use {ctx.prefix}Help urban for god's sake!",
-                                  color=discord.Color.random())
+                                description=f"This was the place where i really didn't expect an error. Use {ctx.prefix}Help urban for god's sake!",
+                                color=discord.Color.random())
             embed.set_footer(text="Wish you could use more brain power for this")
             await ctx.send(embed=embed)
 
         else:
             raise (error)
 
+
     @weather.error
-    async def weather_error(self, ctx, error):
+    async def weather_error(self,ctx,error):
         if isinstance(error, commands.MissingRequiredArgument):
             embed = discord.Embed(title=f"Did you just try to find the weather of NOWHERE?!",
-                                  description=f"I don't even know what to say",
-                                  color=discord.Color.random())
+                                description=f"I don't even know what to say",
+                                color=discord.Color.random())
             embed.set_footer(text="Actually I do. Try being smart.")
             await ctx.send(embed=embed)
 
         else:
             raise (error)
 
+
     @wiki.error
-    async def wiki_error(self, ctx, error):
+    async def wiki_error(self,ctx,error):
         if isinstance(error, commands.MissingRequiredArgument):
             embed = discord.Embed(title=f"It's good you search for knowledge",
-                                  description=f"But at least tell me what knowledge you want.\n There are a trillion+ websites of info out there.",
-                                  color=discord.Color.random())
+                                description=f"But at least tell me what knowledge you want.\n There are a trillion+ websites of info out there.",
+                                color=discord.Color.random())
             embed.set_footer(text="It's a huge world")
             await ctx.send(embed=embed)
 
         else:
             raise (error)
 
+
+
+    
     @lmgtfy.error
-    async def lmgtfy_error(self, ctx, error):
+    async def lmgtfy_error(self,ctx, error):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             await ctx.send(embed=discord.Embed(title="I would love to help you",
-                                               description="But you gotta tell me what to google...",
-                                               color=discord.Color.random()))
+                          description="But you gotta tell me what to google...",
+                                              color=discord.Color.random()))
 
         else:
             raise error
+
 
     @google.error
     async def google_error(self, ctx, error):
         if isinstance(error, commands.errors.MissingRequiredArgument):
-            await ctx.send(embed=discord.Embed(title="I would love to help you",
-                                               description="But you gotta tell me what to google...\nThis also seems kinda familiar lol",
-                                               color=discord.Color.random()))
+            await ctx.send(embed=discord.Embed(title="I would love to help you",                          description="But you gotta tell me what to google...\nThis also seems kinda familiar lol",
+                          color=discord.Color.random()))
 
         else:
             raise error
+
 
     @youtube.error
     async def youtube_error(self, ctx, error):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             await ctx.send(embed=discord.Embed(title="Watching YouTube may be fun",
-                                               description="But stop ruining it by asking for NOTHING",
-                                               color=discord.Color.random()))
+                          description="But stop ruining it by asking for NOTHING",
+                                              color=discord.Color.random()))
 
         else:
             raise error
-
-
 def setup(bot):
     bot.add_cog(Info(bot))
