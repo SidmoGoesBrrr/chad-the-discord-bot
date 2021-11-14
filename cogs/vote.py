@@ -31,21 +31,23 @@ class Vote(commands.Cog):
 
     @tasks.loop(seconds=20)  # repeat after every 20 seconds
     async def member_update(self):
+        now = datetime.now()
         dt_string = now.strftime("%-H")
-        if int(dt_string) == 13:
-            time = datetime.strftime(datetime.now(), "%H:%M:%S")
-            time_IST = datetime.strftime(datetime.now(pytz.timezone('Asia/Kolkata')), "%H:%M:%S")
-            data = [time, time_IST, len(self.bot.users)]
+        if int(dt_string) == 12:
+            date1 = datetime.strftime(datetime.now(), "%a, %d/%m/%Y")
+            data = [date1, len(self.bot.users)]
             with open("databases/members.csv", 'a+', newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 writer.writerow(data)
 
-            time = datetime.strftime(datetime.now(), "%H:%M:%S")
-            time_IST = datetime.strftime(datetime.now(pytz.timezone('Asia/Kolkata')), "%H:%M:%S")
-            data = [time, time_IST, len(self.bot.guilds)]
+            date2 = datetime.strftime(datetime.now(), "%a, %d/%m/%Y")
+            data = [date2, len(self.bot.guilds)]
             with open("databases/servers.csv", 'a+', newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 writer.writerow(data)
+            print("Cheese")
+            await asyncio.sleep(3600)
+
 
 def setup(bot):
     bot.add_cog(Vote(bot))

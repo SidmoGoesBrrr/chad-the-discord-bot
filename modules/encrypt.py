@@ -1,12 +1,17 @@
 import random
 import os
+from dotenv import load_dotenv
 
-key = os.environ['key']
-alphabet = os.environ['alphabet']
+load_dotenv()
+key = os.getenv('key')
+alphabet = os.getenv('alphabet')
 
 
 
 def encrypt_text(plaintext):
+    first_j = False
+    if plaintext.startswith('j'):
+        first_j = True
     def makeKey(alphabet):  # needed only while making new key
         alphabet = list(alphabet)
         random.shuffle(alphabet)
@@ -41,5 +46,8 @@ def encrypt_text(plaintext):
 
     encrypt3 = (''.join(f"{x}{random.choice(lst) if random.randint(0, 4) else ''}" for x in string))
     encrypt4 = encrypt3[::-1]
-    final_encrypted_text = encrypt4
+    if first_j is False:
+        final_encrypted_text = encrypt4
+    else:
+        final_encrypted_text = encrypt4 + "^"
     return final_encrypted_text

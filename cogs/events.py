@@ -1,113 +1,101 @@
-import discord
-from discord.ext import commands, tasks
-from discord_components import *
-from discord_components import DiscordComponents
+
+import nextcord
+from nextcord.ext import commands, tasks
 import os
 from datetime import datetime
 import pytz
 from tinydb import TinyDB, Query
 import csv
+import topgg
+dbl_token = os.getenv('dbl_token')
 
-def checkping(guild_id_var):
-    db = TinyDB('databases/pings.json')
-    query = Query()
-    values = str(list(map(lambda entry: entry["pingstate"],
-                          db.search(query.guild_id == str(guild_id_var))))[0])
-
-    return values.lower()
 
 class events(commands.Cog):
     """A couple of simple commands."""
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        
+
+        self.bot.topggpy = topgg.DBLClient(bot, dbl_token, autopost=True)
+
     
-    
-
-    @tasks.loop(seconds=20)  # repeat after every 20 seconds
-    async def myLoop(self):
-        dir = 'images'
-        for f in os.listdir(dir):
-            os.remove(os.path.join(dir, f))
-
-        guilds = self.bot.guilds
-        guild_count = 0
-        member_count = 0
-        for guild in guilds:
-            guild_count += 1
-            for member in guild.members:
-                member_count += 1
-
-        await self.bot.change_presence(
-            status=discord.Status.idle,
-            activity=discord.Activity(
-                type=discord.ActivityType.listening,
-                name=f"!help | {len(self.bot.users)} members in {guild_count} servers and I'm still playing with Louis"))
-        
-        channel = self.bot.get_channel(878503565369442375)
-        mymsg = await channel.fetch_message(878506421484945479)
-        guilds = self.bot.guilds
-        guild_count = 0
-        member_count = 0
-        for guild in guilds:
-            guild_count += 1
-            for member in guild.members:
-                member_count += 1
-        embed=discord.Embed(title="Stats of the Chad Bot(Me!)",color=discord.Color.random())
-        embed.add_field(name="Servers",value=len(self.bot.guilds),inline=False)
-        embed.add_field(name="Unique users",value=len(self.bot.users),inline=False)
-        embed.add_field(name="Total users(contains common members)",value=member_count,inline=False)
-        await mymsg.edit(embed=embed)
-        db = TinyDB('databases/pings.json')
-        query = Query()
-
-        for guild in self.bot.guilds:
-            guild_id_var = guild.id
-            try:
-                db.update({'pingstate': True}, query.guild_id == str(guild_id_var))
-            except:
-                db.insert({'guild_id': str(guild_id_var), 'pingstate': True})
 
     @commands.Cog.listener()
     async def on_ready(self):
         print('Logged in as')
+        print(f'Time:{datetime.now()}')
         print(self.bot.user.name)
         print(self.bot.user.id)
         print('.....')
-        self.myLoop.start()
-        DiscordComponents(self.bot)
         await self.bot.change_presence(
-            status=discord.Status.idle,
-            activity=discord.Activity(
-                type=discord.ActivityType.listening,
+            status=nextcord.Status.idle,
+            activity=nextcord.Activity(
+                type=nextcord.ActivityType.listening,
                 name=f"!help | {len(self.bot.users)} members in {len(self.bot.guilds)} servers and I'm still playing with Louis"))
-   
+
     @commands.Cog.listener()
-    async def on_message(self,message):
-        if message.content=="<@!864010316424806451>":
-            prefix=await self.bot.get_prefix(message)
-            prefix="".join(prefix)
-            embed=discord.Embed(title="I have been summoned!!",color=discord.Color.random(),description=f"My prefix on this server is `{prefix}`\n Simply do `{prefix}help` to see all my commands!\n(If there are too many '!'s then blame me not...)")
+    async def on_message(self, message):
+        prefix = await self.bot.get_prefix(message)
+        prefix = "".join(prefix)
+        if message.content == "<@!864010316424806451>":
+            embed = nextcord.Embed(title="I have been summoned!!", color=nextcord.Color.random(),
+                                  description=f"My prefix on this server is `{prefix}`\n Simply do `{prefix}help` to see all my commands!\n(If there are too many '!'s then blame me not...)")
             embed.set_footer(text='I was chilling until you disturbed me :(')
             await message.channel.send(embed=embed)
 
+        if message.content.startswith(f'{prefix}afk'):
+            return
+
+        db = TinyDB('databases/blacklist.json')
+        member = message.author.id
+        try:
+            query = Query()
+            blacklisted_guild = db.search(query['guild_id'] == message.guild.id)
+            blacklisted_peeps = None
+            for i in range(0, len(blacklisted_guild)):
+                if str(member) in str(blacklisted_guild[i]):
+                    blacklisted_peeps = blacklisted_guild[i]
+            if blacklisted_peeps is not None:
+                return
+        except:
+            print("It's a DM")
+
+        db2 = TinyDB('databases/afk.json')
+        query = Query()
+
+        for member in message.mentions:
+            if db2.search(query['afk_user'] == member.id):
+                value = str(
+                    list(
+                        map(lambda entry: entry["reason"],
+                            db2.search(query['afk_user'] == member.id)))[0])
+                await message.channel.send(
+                    embed=nextcord.Embed(title=f"{member.display_name} is currently afk",
+                                        description=f"Afk note is: {value}",
+                                        color=nextcord.Color.random()))
+
+        member = message.author
+        if db2.search(query['afk_user'] == member.id):
+            await message.channel.send(embed=nextcord.Embed(
+                title=f"{member.display_name} You typed a message!",
+                description=f"That means you ain't afk!\nWelcome back buddy.",
+                color=nextcord.Color.random()))
+
+            query = Query()
+            db2.remove(query.afk_user == member.id)
+
     @commands.Cog.listener()
-    async def on_member_join(self,member):
+    async def on_member_join(self, member):
         channel = member.guild.system_channel
         pos = sum(m.joined_at < member.joined_at for m in member.guild.members
                   if m.joined_at is not None)
         if member.guild.id == 869173101131337748 or member.guild.id == 819870399310594088:
-            if checkping(member.guild.id) == 'true':
-                membervar = member.mention
+            member_var = member.display_name
 
-            else:
-                membervar = member.display_name
-
-            embed = discord.Embed(
-                description=
-                f"Welcome {membervar} to **{member.guild.name}**\nYou are the {pos}th member in the server.",
+            embed = nextcord.Embed(
+                description=f"Welcome {member_var} to **{member.guild.name}**\nYou are the {pos}th member in the server.",
                 color=0xe74c3c)
-            embed.set_thumbnail(url=member.avatar_url)
+            embed.set_thumbnail(url=member.avatar.url)
             if not member.bot:
                 try:
                     await member.send(f'Welcome to {member.guild.name}')
@@ -118,80 +106,63 @@ class events(commands.Cog):
                 else:
                     await channel.send(embed=embed)
 
-
     @commands.Cog.listener()
-    async def on_guild_channel_create(self,channel):
+    async def on_guild_channel_create(self, channel):
         guild = channel.guild
-        mutedRole = discord.utils.get(guild.roles, name="Is Muted")
-        if mutedRole is None:
-            perms = discord.Permissions(speak=False,
+        muted_role = nextcord.utils.get(guild.roles, name="Is Muted")
+        if muted_role is None:
+            perms = nextcord.Permissions(speak=False,
                                         send_messages=False,
                                         read_message_history=True,
                                         read_messages=True)
             try:
                 await guild.create_role(name="Is Muted",
-                                        color=discord.Color.dark_gray(),
+                                        color=nextcord.Color.dark_gray(),
                                         permissions=perms)
 
             except:
                 print("New channel made, cant sync mute perms")
             try:
-                mutedRole = discord.utils.get(guild.roles, name="Is Muted")
+                muted_role = nextcord.utils.get(guild.roles, name="Is Muted")
             except:
                 print("Couldnt get role :(")
         try:
-            await channel.set_permissions(mutedRole,
+            await channel.set_permissions(muted_role,
                                           send_messages=False,
                                           speak=False)
         except:
             print("Couldnt get role :(")
 
-
     @commands.Cog.listener()
-    async def on_member_remove(self,member):
+    async def on_member_remove(self, member):
         channel = member.guild.system_channel
         if member.guild.id == 869173101131337748 or member.guild.id == 819870399310594088:
-            embed = discord.Embed(
+            embed = nextcord.Embed(
                 description=f"{member.name} left **{member.guild.name}**",
                 color=0xe74c3c)
-            embed.set_thumbnail(url=member.avatar_url)
+            embed.set_thumbnail(url=member.avatar.url)
             try:
                 await channel.send(embed=embed)
             except:
                 print("Could not get channel")
 
-
-    
-
-
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         db1 = TinyDB('databases/lockdown.json')
         db1.insert({'guild': guild.id, 'unaffected_channels': [], 'state': False})
-        db2 = TinyDB('databases/pings.json')
-        guild_id_var = guild.id
-        db2.insert({'guild_id': str(guild_id_var), 'pingstate': True})
-        count = 0
-        for member in guild.members:
-            count += 1
-        embed = discord.Embed(title="Guild join",
+
+        embed = nextcord.Embed(title="Guild join",
                               description=guild.name,
                               color=0x00FF00)
-        embed.add_field(name=f"Members", value=count)
+        embed.add_field(name=f"Members", value=str(len(guild.members)))
         embed.add_field(name=f"Owner", value=guild.owner)
         a = self.bot.get_guild(869173101131337748)
         channel = a.get_channel(869447409237897256)
         embed.set_footer(text=f"Chad is currently in {len(self.bot.guilds)} servers")
         await channel.send(embed=embed)
 
-        
-
-
-
-
-
     @commands.Cog.listener()
-    async def on_guild_remove(self,guild):
+    async def on_guild_remove(self, guild):
         db1 = TinyDB('databases/lockdown.json')
         db1q = Query()
         db1.remove(db1q.guild == guild.id)
@@ -204,24 +175,19 @@ class events(commands.Cog):
         db4 = TinyDB('databases/prefix.json')
         db4q = Query()
         db4.remove(db4q.guild_id == guild.id)
-        db5 = TinyDB('databases/pings.json')
-        db5q = Query()
-        db5.remove(db5q.guild_id == guild.id)
-        
-        count = 0
-        for x in guild.members:
-            count += 1
-            
-        embed = discord.Embed(title="Guild leave",
+
+        embed = nextcord.Embed(title="Guild leave",
                               description=guild.name,
                               color=0xFF0000)
-        embed.add_field(name=f"Members", value=count)
+        embed.add_field(name=f"Members", value=str(len(guild.members)))
         embed.add_field(name=f"Owner", value=guild.owner)
         a = self.bot.get_guild(869173101131337748)
         channel = a.get_channel(869447409237897256)
         await channel.send(embed=embed)
 
-        
+    @commands.Cog.listener()
+    async def on_autopost_success(self):
+        print(f"Posted server count ({self.bot.topggpy.guild_count}))")
 
 
 def setup(bot: commands.Bot):

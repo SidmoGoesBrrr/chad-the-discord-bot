@@ -1,6 +1,8 @@
 import random
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 key = os.environ['key']
 alphabet = os.environ['alphabet']
 
