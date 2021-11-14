@@ -125,6 +125,12 @@ Contributions are what make the open source community such an amazing place to l
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+Current Issues:
+We need a TicTacToe command
+We need fixing for typeracer
+We need a way to anaylize our stats which are written in CSV files and graph it
+
+*Note* : Yes we are aware we have more than 100 slash commands.. Please do not tell us abt that
 
 
 <!-- LICENSE -->
