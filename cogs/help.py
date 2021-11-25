@@ -509,27 +509,27 @@ class Help(commands.Cog):
                 inline=False)
             help_nerd_4.add_field(
                 name="Sin",
-                value=f"Gives you info about sin\n/sin (this feature has no help function)",
+                value=f"Gives you info about sin\n/trig sin (this feature has no help function)",
                 inline=False)
             help_nerd_4.add_field(
                 name="Cos",
-                value=f"Gives you info about cos\n/cos (this feature has no help function)",
+                value=f"Gives you info about cos\n/trig cos (this feature has no help function)",
                 inline=False)
             help_nerd_4.add_field(
                 name="Tan",
-                value=f"Gives you info about tan\n/tan (this feature has no help function)",
+                value=f"Gives you info about tan\n/trig tan (this feature has no help function)",
                 inline=False)
             help_nerd_4.add_field(
                 name="Sec",
-                value=f"Gives you info about sec\n/sec (this feature has no help function)",
+                value=f"Gives you info about sec\n/trig sec (this feature has no help function)",
                 inline=False)
             help_nerd_4.add_field(
                 name="Cosec",
-                value=f"Gives you info about cosec\n/cosec (this feature has no help function)",
+                value=f"Gives you info about cosec\n/trig cosec (this feature has no help function)",
                 inline=False)
             help_nerd_4.add_field(
                 name="Cot",
-                value=f"Gives you info about cot\n/cot (this feature has no help function)",
+                value=f"Gives you info about cot\n/trig cot (this feature has no help function)",
                 inline=False)
 
             help_nerd_4.set_footer(text="Page 4 of 4")
@@ -1525,7 +1525,7 @@ class Help(commands.Cog):
                                    color=nextcord.Color.green())
             embed.add_field(
                 name="Usage:",
-                value=f"/add <number1> <number2> etc...",
+                value=f"/math add <number1> <number2> etc...",
                 inline=True
             )
             embed.set_footer(text="I can add a lot of stuff tbh")
@@ -1537,7 +1537,7 @@ class Help(commands.Cog):
                                    color=nextcord.Color.green())
             embed.add_field(
                 name="Usage:",
-                value=f"/subtract <number1> <number2>",
+                value=f"/math subtract <number1> <number2>",
                 inline=True
             )
             embed.set_footer(text="I can subtract a only two numbers for obvious reasons")
@@ -1549,7 +1549,7 @@ class Help(commands.Cog):
                                    color=nextcord.Color.green())
             embed.add_field(
                 name="Usage:",
-                value=f"/mulitply <number1> <number2> etc...",
+                value=f"/math mulitply <number1> <number2> etc...",
                 inline=True
             )
             embed.set_footer(text="I can multiply a lot of stuff tbh")
@@ -1561,7 +1561,7 @@ class Help(commands.Cog):
                                    color=nextcord.Color.green())
             embed.add_field(
                 name="Usage:",
-                value=f"/divide <number1> <number2>",
+                value=f"/math divide <number1> <number2>",
                 inline=True
             )
             embed.set_footer(text="I can divide a only two numbers for obvious reasons")
@@ -1573,7 +1573,7 @@ class Help(commands.Cog):
                                    color=nextcord.Color.green())
             embed.add_field(
                 name="Usage:",
-                value=f"/square <number>",
+                value=f"/math square <number>",
                 inline=True
             )
             embed.set_footer(text="It's pretty straight forward and ded useful")
@@ -1585,7 +1585,7 @@ class Help(commands.Cog):
                                    color=nextcord.Color.green())
             embed.add_field(
                 name="Usage:",
-                value=f"/cube <number>",
+                value=f"/math cube <number>",
                 inline=True
             )
             embed.set_footer(text="It's pretty straight forward and ded useful")
@@ -1597,7 +1597,7 @@ class Help(commands.Cog):
                                    color=nextcord.Color.green())
             embed.add_field(
                 name="Usage:",
-                value=f"/squareroot <number>",
+                value=f"/math squareroot <number>",
                 inline=True
             )
             embed.set_footer(text="It's pretty straight forward and ded useful")
@@ -1609,7 +1609,7 @@ class Help(commands.Cog):
                                    color=nextcord.Color.green())
             embed.add_field(
                 name="Usage:",
-                value=f"/cuberoot <number>",
+                value=f"/math cuberoot <number>",
                 inline=True
             )
             embed.set_footer(text="It's pretty straight forward and ded useful")
@@ -1621,7 +1621,7 @@ class Help(commands.Cog):
                                    color=nextcord.Color.green())
             embed.add_field(
                 name="Usage:",
-                value=f"/power <number> <power>",
+                value=f"/math power <number> <power>",
                 inline=True
             )
             embed.set_footer(text="An OP function if I do say so myself")
@@ -1633,7 +1633,7 @@ class Help(commands.Cog):
                                    color=nextcord.Color.green())
             embed.add_field(
                 name="Usage:",
-                value=f"/root <number> <root>",
+                value=f"/math root <number> <root>",
                 inline=True
             )
             embed.set_footer(text="Another OP function if I do say so myself")
@@ -1663,17 +1663,7 @@ class Help(commands.Cog):
             embed.set_footer(text="Its usage is... interesting")
             await ctx.send(embed=embed)
 
-        elif about.lower() == 'question' or about.lower() == 'aaq':
-            embed = nextcord.Embed(title="Help Ask A Question",
-                                   description="You ask me a question, I give you it's answer.",
-                                   color=nextcord.Color.green())
-            embed.add_field(
-                name="Usage:",
-                value=f"/question <question>",
-                inline=True
-            )
-            embed.set_footer(text="Im just wondering how many ppl will fail to use this properly")
-            await ctx.send(embed=embed)
+       
 
         elif about.lower() == 'ask':
             embed = nextcord.Embed(title="Help Ask",

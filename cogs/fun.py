@@ -1175,7 +1175,7 @@ class Fun(commands.Cog):
             wanted_member = ctx.author
 
         wanted = Image.open('templates/wanted_template.jpg')
-        asset = wanted_member.avatar.with_size(128)   #with_size() is not a thing in nextcord FIX otherwise no work
+        asset = wanted_member.avatar.with_size(128)
         data = BytesIO(await asset.read())
         pfp = Image.open(data)
         pfp = pfp.resize((224, 224))
@@ -2028,8 +2028,7 @@ class Fun(commands.Cog):
                     pass
 
         elif isinstance(error, nextcord.ext.commands.errors.CommandInvokeError):
-            raise error
-            await ctx.send(embed=nextcord.Embed(title="Sorry Im already playing audio. Do !stop to stop it",
+            await ctx.send(embed=nextcord.Embed(title=f"Sorry Im already playing audio. Do /stop to stop it",
                                                 color=nextcord.Color.random()))
 
         else:

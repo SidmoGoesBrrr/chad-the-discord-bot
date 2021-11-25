@@ -56,7 +56,7 @@ class Utils(commands.Cog):
             embed1 = nextcord.Embed(title="Role Created!",
                                     description=f"Added role {role.mention} to the server!",
                                     color=color)
-            embed1.set_footer(text=f"Tip: Do !addrole to add your newly created role to users!")
+            embed1.set_footer(text=f"Tip: Do /addrole to add your newly created role to users!")
             await ctx.send(embed=embed1)
 
         else:
@@ -157,7 +157,7 @@ class Utils(commands.Cog):
                         color=nextcord.Color.random()
                     )
                     embed.set_footer(
-                        text=f"Tip: Use !color <new_name> <new_color> to change the name and color of a role at the same time")
+                        text=f"Tip: Use /color <new_name> <new_color> to change the name and color of a role at the same time")
                     await ctx.send(embed=embed)
                     return
                 split = information.split('#')
@@ -175,7 +175,7 @@ class Utils(commands.Cog):
                     color=nextcord.Color.random()
                 )
                 embed.set_footer(
-                    text=f"Tip: You can use the !color feature to find out what colour a hexdecimal will look like")
+                    text=f"Tip: You can use the /color feature to find out what colour a hexdecimal will look like")
                 await ctx.send(embed=embed)
 
             else:
@@ -210,7 +210,7 @@ class Utils(commands.Cog):
                         color=nextcord.Color.random()
                     )
                     embed.set_footer(
-                        text=f"Tip: Use !color <new_name> <new_color> to change the name and color of a role at the same time")
+                        text=f"Tip: Use {ctx.prefix}color <new_name> <new_color> to change the name and color of a role at the same time")
                     await ctx.send(embed=embed)
                     return
                 split = information.split('#')
@@ -228,7 +228,7 @@ class Utils(commands.Cog):
                     color=nextcord.Color.random()
                 )
                 embed.set_footer(
-                    text=f"Tip: You can use the !color feature to find out what colour a hexdecimal will look like")
+                    text=f"Tip: You can use the {ctx.prefix}color feature to find out what colour a hexdecimal will look like")
                 await ctx.send(embed=embed)
 
             else:
@@ -889,7 +889,7 @@ class Utils(commands.Cog):
         about_embed = nextcord.Embed(title="About ME!", color=nextcord.Color.green())
         about_embed.add_field(name="Bot Developed by:", value=f"ZeroAndOne, [My epic devs!](https://zeroandone.ml)")
         about_embed.add_field(name="Created to:", value=f"Make discord a better place. :angel:")
-        about_embed.add_field(name="Features:", value=f"Use !help", inline=True)
+        about_embed.add_field(name="Features:", value=f"Use {ctx.prefix}help", inline=True)
         about_embed.add_field(
             name="Give me feedback and complains here. Help me improve myself!\nAlso useful for finding out about the latest Chad updates!!",
             value=f"[Support Server](https://discord.gg/wTsj4DZhyZ)", inline=True)
@@ -907,7 +907,7 @@ class Utils(commands.Cog):
         about_embed = nextcord.Embed(title="About ME!", color=nextcord.Color.green())
         about_embed.add_field(name="Bot Developed by:", value=f"ZeroAndOne, [My epic devs!](https://zeroandone.ml)")
         about_embed.add_field(name="Created to:", value=f"Make discord a better place. :angel:")
-        about_embed.add_field(name="Features:", value=f"Use !help", inline=True)
+        about_embed.add_field(name="Features:", value=f"Use /help", inline=True)
         about_embed.add_field(
             name="Give me feedback and complains here. Help me improve myself!\nAlso useful for finding out about the latest Chad updates!!",
             value=f"[Support Server](https://discord.gg/wTsj4DZhyZ)", inline=True)
@@ -1112,11 +1112,11 @@ class Utils(commands.Cog):
         embed.set_author(
             name=f"{author.name}#{author.discriminator} has been head-shotted by our glorious snipe command",
             icon_url=author.avatar.url)
-        embed.set_footer(text=f"Deleted in : {channel_name} Sniper: {ctx.author.display_name}")
+        embed.set_footer(text=f"Deleted in : #{channel_name} Sniper: {ctx.author.display_name}")
 
         await ctx.channel.send(embed=embed)
 
-    @cog_ext.cog_slash(name="snipe", description="See what the last deleted message in your server was.")
+    @cog_ext.cog_slash(name="Snipe", description="Find out what the last deleted message in your server was.")
     async def _snipe(self, ctx: SlashContext):
         try:
             contents, author, channel_name, duration = self.bot.sniped_messages[ctx.guild.id]
@@ -1132,10 +1132,9 @@ class Utils(commands.Cog):
                 name=f"{author.name}#{author.discriminator} has been head-shotted by our glorious snipe command",
                 icon_url=author.avatar.url)
         except:
-
             embed.set_author(
                 name=f"{author.name}#{author.discriminator} has been head-shotted by our glorious snipe command")
-        embed.set_footer(text=f"Deleted in : {channel_name} Sniper: {ctx.author.display_name}")
+        embed.set_footer(text=f"Deleted in : #{channel_name} Sniper: {ctx.author.display_name}")
 
         await ctx.channel.send(embed=embed)
 

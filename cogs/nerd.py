@@ -9,15 +9,13 @@ from discord_slash.utils.manage_commands import create_option, create_choice
 from discord_slash.model import ButtonStyle
 from discord_slash.utils.manage_components import create_button, create_actionrow
 from discord_slash.utils.manage_components import wait_for_component
-from dotenv import load_dotenv
 
-load_dotenv()
 
 class Nerd(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @cog_ext.cog_slash(name="add", description="Adds numbers for you.",
+    @cog_ext.cog_subcommand(base="math",name="add", description="Adds numbers for you.",
                        options=[
                            create_option(name="numbers",
                                          description="The numbers you want to add",
@@ -92,7 +90,7 @@ class Nerd(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="substract", description="Substract numbers for you.",
+    @cog_ext.cog_subcommand(base="math",name="substract", description="Substract numbers for you.",
                        options=[
                            create_option(name="numbers",
                                          description="The numbers you want to substract",
@@ -157,7 +155,7 @@ class Nerd(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="multiply", description="Multiplies numbers for you.",
+    @cog_ext.cog_subcommand(base="math",name="multiply", description="Multiplies numbers for you.",
                        options=[
                            create_option(name="numbers",
                                          description="The numbers you want to multiply",
@@ -232,7 +230,7 @@ class Nerd(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="divide", description="Divides numbers for you.",
+    @cog_ext.cog_subcommand(base="math",name="divide", description="Divides numbers for you.",
                        options=[
                            create_option(name="numbers",
                                          description="The numbers you want to divide",
@@ -1523,50 +1521,9 @@ class Nerd(commands.Cog):
                 embed.set_thumbnail(url=ctx.author.avatar.url)
                 await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="question", description="Allows you to ask me any random question.",
-                       options=[
-                           create_option(name="question",
-                                         description="The question you want to ask",
-                                         option_type=3,
-                                         required=True)])
-    async def _question(self, ctx: SlashContext, *, question=""):
-        if question == "":
-            await ctx.send(embed=nextcord.Embed(title=f"You need to ASK something.",
-                                                description=f"So that I can ANSWER it.\nIf you genuinely didn't think of this, then use !roast to see what I'm thinking.",
-                                                color=nextcord.Color.random()))
-        app_id = os.getenv("wolfy_lmao")
-        client = wolframalpha.Client(app_id)
+   
 
-        res = client.query(question)
-
-        try:
-            answer = next(res.results).text
-            await ctx.send(embed=nextcord.Embed(description=f"{answer}",
-                                                color=nextcord.Color.random()))
-        except:
-            await ctx.send(embed=nextcord.Embed(title=f"Couldn't find sh*t for {question}",
-                                                color=nextcord.Color.random()))
-
-    @commands.command(aliases=['aaq'])
-    async def question(self, ctx, *, question=""):
-        if question == "":
-            await ctx.send(embed=nextcord.Embed(title=f"You need to ASK something.",
-                                                description=f"So that I can ANSWER it.\nIf you genuinely didn't think of this, then use !roast to see what I'm thinking.",
-                                                color=nextcord.Color.random()))
-        app_id = os.getenv("wolfy_lmao")
-        client = wolframalpha.Client(app_id)
-
-        res = client.query(question)
-
-        try:
-            answer = next(res.results).text
-            await ctx.send(embed=nextcord.Embed(description=f"{answer}",
-                                                color=nextcord.Color.random()))
-        except:
-            await ctx.send(embed=nextcord.Embed(title=f"Couldn't find sh*t for {question}",
-                                                color=nextcord.Color.random()))
-
-    @cog_ext.cog_slash(name="square", description="Gets the square of a number for you.",
+    @cog_ext.cog_subcommand(base="math",name="square", description="Gets the square of a number for you.",
                        options=[
                            create_option(name="number",
                                          description="The number whose square you want",
@@ -1595,7 +1552,7 @@ class Nerd(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="cube", description="Gets the cube of a number for you.",
+    @cog_ext.cog_subcommand(base="math",name="cube", description="Gets the cube of a number for you.",
                        options=[
                            create_option(name="number",
                                          description="The number whose cube you want",
@@ -1624,7 +1581,7 @@ class Nerd(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="squareroot", description="Gets the square root of a number for you.",
+    @cog_ext.cog_subcommand(base="math",name="squareroot", description="Gets the square root of a number for you.",
                        options=[
                            create_option(name="number",
                                          description="The number whose square root you want",
@@ -1653,7 +1610,7 @@ class Nerd(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="cuberoot", description="Gets the cube root of a number for you.",
+    @cog_ext.cog_subcommand(base="math",name="cuberoot", description="Gets the cube root of a number for you.",
                        options=[
                            create_option(name="number",
                                          description="The number whose cube root you want",
@@ -1682,7 +1639,7 @@ class Nerd(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="power", description="Gets any power of any number for you.",
+    @cog_ext.cog_subcommand(base="math",name="power", description="Gets any power of any number for you.",
                        options=[
                            create_option(name="number",
                                          description="The number whose power is needed",
@@ -1715,7 +1672,7 @@ class Nerd(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="root", description="Gets any power of any number for you.",
+    @cog_ext.cog_subcommand(base="math",name="root", description="Gets any power of any number for you.",
                        options=[
                            create_option(name="number",
                                          description="The number whose root is needed",
@@ -1748,7 +1705,7 @@ class Nerd(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="trig", description="Gives you some info about trigonometric functions...")
+    @cog_ext.cog_subcommand(base="math",name="trig", description="Gives you some info about trigonometric functions...")
     async def _trig(self, ctx: SlashContext):
         string = "sin A = Perpendicular/Hypotenuse\ncos A = Base/Hypotenuse\ntan A = Perpendicular/Base\nsec A = Hypotenuse/Base\ncosec A = Hypotenuse/Perpendicular\ncot A = Base/Perpendicular"
         embed = nextcord.Embed(title=f"Trigonometric values are as follows:",
@@ -1768,7 +1725,7 @@ class Nerd(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="sin", description="Gives you info about sin")
+    @cog_ext.cog_subcommand(base="trig",name="sin", description="Gives you info about sin")
     async def _sin(self, ctx: SlashContext):
         embed = nextcord.Embed(title=f"Info on the trigonometric value 'sin'",
                                color=nextcord.Color.random())
@@ -1796,7 +1753,7 @@ class Nerd(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="cos", description="Gives you info about cos")
+    @cog_ext.cog_subcommand(base="trig",name="cos", description="Gives you info about cos")
     async def _cos(self, ctx: SlashContext):
         embed = nextcord.Embed(title=f"Info on the trigonometric value 'cos'",
                                color=nextcord.Color.random())
@@ -1824,7 +1781,7 @@ class Nerd(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="tan", description="Gives you info about tan")
+    @cog_ext.cog_subcommand(base="trig",name="tan", description="Gives you info about tan")
     async def _tan(self, ctx: SlashContext):
         embed = nextcord.Embed(title=f"Info on the trigonometric value 'tan'",
                                color=nextcord.Color.random())
@@ -1852,7 +1809,7 @@ class Nerd(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="sec", description="Gives you info about sec")
+    @cog_ext.cog_subcommand(base="trig",name="sec", description="Gives you info about sec")
     async def _sec(self, ctx: SlashContext):
         embed = nextcord.Embed(title=f"Info on the trigonometric value 'sec'",
                                color=nextcord.Color.random())
@@ -1880,7 +1837,7 @@ class Nerd(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="cosec", description="Gives you info about cosec")
+    @cog_ext.cog_subcommand(base="trig",name="cosec", description="Gives you info about cosec")
     async def _cosec(self, ctx: SlashContext):
         embed = nextcord.Embed(title=f"Info on the trigonometric value 'cosec'",
                                color=nextcord.Color.random())
@@ -1908,7 +1865,7 @@ class Nerd(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="cot", description="Gives you info about cot")
+    @cog_ext.cog_subcommand(base="trig",name="cot", description="Gives you info about cot")
     async def _cot(self, ctx: SlashContext):
         embed = nextcord.Embed(title=f"Info on the trigonometric value 'cot'",
                                color=nextcord.Color.random())

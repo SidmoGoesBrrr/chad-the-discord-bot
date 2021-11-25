@@ -463,7 +463,7 @@ class Info(commands.Cog):
     @commands.command(aliases=['yt'])
     async def youtube(self, ctx, *, query: str):
         req = requests.get(
-            ('https://www.googleapis.com/youtube/v3/search?part=id&maxResults=1&order=relevance&q={}&relevanceLanguage=en&safeSearch=moderate&type=video&videoDimension=2d&fields=items%2Fid%2FvideoId&key='.format(query) + os.getenv("ytapi")))
+            ('https://www.googleapis.com/youtube/v3/search?part=id&maxResults=1&order=relevance&q={}&relevanceLanguage=en&safeSearch=moderate&type=video&videoDimension=2d&fields=items%2Fid%2FvideoId&key='.format(query) + os.getenv("yt_api")))
         try:
             vid_url = "https://www.youtube.com/watch?v={}".format(req.json()['items'][0]['id']['videoId'])
             await ctx.send(f"Here is the video: \n**{vid_url}**")

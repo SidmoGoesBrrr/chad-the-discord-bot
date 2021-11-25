@@ -8,14 +8,12 @@ import os
 class Loops(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-    @commands.Cog.listener()
-    async def on_ready(self):
         self.checkVoteTime.start()
         self.csv_update.start()
         self.statusandfiles.start()
+    
 
-    @tasks.loop(seconds=20)  # repeat after every 20 seconds
+    @tasks.loop(seconds=40)  # repeat after every 40 seconds
     async def checkVoteTime(self):
         channel = self.bot.get_channel(880639248292798465)
         now = datetime.now()
@@ -28,7 +26,7 @@ class Loops(commands.Cog):
             await channel.send(embed=vote, content="<@&881209363077943326>")
             await asyncio.sleep(3600)
 
-    @tasks.loop(seconds=20)
+    @tasks.loop(seconds=50)
     async def csv_update(self):
         now = datetime.now()
         dt_string = now.strftime("%-H")
@@ -46,7 +44,7 @@ class Loops(commands.Cog):
                 writer.writerow(data)
             await asyncio.sleep(3600)
 
-    @tasks.loop(seconds=120)
+    @tasks.loop(seconds=300)
     async def statusandfiles(self):
         directory = 'images'
         for f in os.listdir(directory):
@@ -63,10 +61,8 @@ class Loops(commands.Cog):
         channel = self.bot.get_channel(878503565369442375)
         mymsg = await channel.fetch_message(878506421484945479)
         guilds = self.bot.guilds
-        guild_count = 0
         member_count = 0
         for guild in guilds:
-            guild_count += 1
             for _ in guild.members:
                 member_count += 1
         embed = nextcord.Embed(title="Stats of the Chad Bot(Me!)", color=nextcord.Color.random())

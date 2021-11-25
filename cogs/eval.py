@@ -29,9 +29,9 @@ class Eval(commands.Cog):
             arr[len(arr) - 1] = "return " + arr[::-1][0]
         return "".join(f"\n\t{i}" for i in arr)
 
-    @commands.command(pass_context=True, aliases=['eva', 'exec', 'evaluate'])
+    @commands.command(aliases=['eva', 'exec', 'evaluate'])
     async def eval(self, ctx, *, code: str):
-        if ctx.message.author.id == 815555652780294175 or 723032217504186389:
+        if ctx.message.author.id == 815555652780294175 or ctx.message.author.id == 723032217504186389:
             silent = ("-s" in code)
 
             code = self.prepare(code.replace("-s", ""))
