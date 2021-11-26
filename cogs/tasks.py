@@ -13,24 +13,29 @@ class Loops(commands.Cog):
         self.statusandfiles.start()
     
 
-    @tasks.loop(seconds=40)  # repeat after every 40 seconds
+    @tasks.loop(seconds=60)  # repeat after every 40 seconds
     async def checkVoteTime(self):
+        await self.bot.wait_until_ready()
         channel = self.bot.get_channel(880639248292798465)
         now = datetime.now()
-        dt_string = now.strftime("%-H")
-        if int(dt_string) == 15 or int(dt_string) == 3:
+        dt_string = now.strftime("%H %M")
+        if dt_string == "15 00" or dt_string == "03 00":
             vote = nextcord.Embed(title="This is your reminder", description="You better vote for me, here and now", color=nextcord.Color.random())
             vote.add_field(name="1", value=f"[top.gg](https://top.gg/bot/864010316424806451/vote)")
             vote.add_field(name="2", value=f"[discordbotlist.com](https://discordbotlist.com/bots/chad-6621/upvote)")
             vote.set_thumbnail(url="https://i.imgur.com/QICgRpf.png")
             await channel.send(embed=vote, content="<@&881209363077943326>")
-            await asyncio.sleep(3600)
+        else:
+            pass
 
-    @tasks.loop(seconds=50)
+
+
+    @tasks.loop(seconds=60)
     async def csv_update(self):
+        await self.bot.wait_until_ready()
         now = datetime.now()
-        dt_string = now.strftime("%-H")
-        if int(dt_string) == 12:
+        dt_string = now.strftime("%H %M")
+        if dt_string == "12 00":
             date1 = datetime.strftime(datetime.now(), "%a, %d/%m/%Y")
             data = [date1, len(self.bot.users)]
             with open("databases/members.csv", 'a+', newline='') as csvfile:
@@ -42,10 +47,10 @@ class Loops(commands.Cog):
             with open("databases/servers.csv", 'a+', newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 writer.writerow(data)
-            await asyncio.sleep(3600)
 
     @tasks.loop(seconds=300)
     async def statusandfiles(self):
+        await self.bot.wait_until_ready()
         directory = 'images'
         for f in os.listdir(directory):
             os.remove(os.path.join(directory, f))
